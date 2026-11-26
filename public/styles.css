@@ -429,6 +429,11 @@ button:disabled {
 
 .group {
   margin-top: 30px;
+  scroll-margin-top: 16px;
+}
+
+.mock-banner ~ #app .group {
+  scroll-margin-top: 40px;
 }
 
 .group:first-of-type {
@@ -589,6 +594,82 @@ button:disabled {
   color: var(--danger);
 }
 
+/* freshness of the balances, MC Bank's "synced just now" line */
+.freshness {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px 0;
+  font-size: var(--fs-footnote);
+  color: var(--text-3);
+}
+
+.freshness .icon {
+  color: var(--accent);
+}
+
+.freshness.stale,
+.freshness.stale .icon {
+  color: var(--debt);
+}
+
+.next-step {
+  justify-self: start;
+}
+
+/* the session's close: every pot in both accounts at its goal */
+.payday-done {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-bottom: 26px;
+  padding: 22px 18px 18px;
+}
+
+.payday-done .tick {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  margin-bottom: 4px;
+  animation: done-pop 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.payday-done .tick .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.payday-done h1 {
+  font-size: var(--fs-title);
+  line-height: 1.15;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.025em;
+}
+
+.payday-done p {
+  color: var(--text-2);
+  font-size: var(--fs-control);
+}
+
+.payday-done p .num {
+  font-weight: var(--fw-bold);
+}
+
+.payday-done .freshness {
+  padding: 4px 0 0;
+}
+
+@keyframes done-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
 /* ---- pot list ---------------------------------------------------------------------- */
 
 .list {
@@ -654,6 +735,68 @@ button:disabled {
   height: 100%;
   border-radius: 2px;
   background: var(--accent);
+}
+
+.full-toggle {
+  position: relative;
+}
+
+.list > li + .full-toggle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 0;
+  height: 1px;
+  background: var(--separator);
+}
+
+.full-toggle-btn {
+  width: 100%;
+  min-height: 56px;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 16px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-label);
+  text-align: left;
+}
+
+.full-toggle-btn:active:not(:disabled) {
+  transform: none;
+  background: var(--surface-2);
+}
+
+.full-toggle-btn .grow {
+  flex: 1;
+}
+
+.full-toggle-btn .tick {
+  color: var(--accent);
+}
+
+.full-toggle-btn .chevron {
+  color: var(--text-3);
+  transform: rotate(90deg);
+  transition: transform 150ms ease-out;
+}
+
+.full-toggle-btn .chevron.open {
+  transform: rotate(-90deg);
+}
+
+.full-toggle + .pot::before,
+.pot + .full-toggle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 0;
+  height: 1px;
+  background: var(--separator);
 }
 
 .pot-amount {

@@ -91,6 +91,12 @@ const S = {
   /** @type {Record<Kind, Run | null>} */
   runs: { personal: null, joint: null },
   refreshing: false,
+  /** When balances were last read from Monzo (ms). */
+  loadedAt: 0,
+  /** Full pots are tucked away unless opened. @type {Record<Kind, boolean>} */
+  showFull: { personal: false, joint: false },
+  /** Real deposits made this session, for the "Payday done" close. */
+  filledThisSession: { amount: 0, pots: 0 },
   copied: false,
   light: document.documentElement.getAttribute("data-theme") === "light",
 };
@@ -122,6 +128,7 @@ async function load() {
     const personal = await loadGroup("personal");
     const joint = await loadGroup("joint");
     S.groups = { personal, joint };
+    S.loadedAt = Date.now();
     session.set("pf.approved", "1");
     S.screen = "main";
     S.error = "";
@@ -203,7 +210,20 @@ async function runFill(kind) {
     return;
   }
   render();
-  if (!dryRun) await load();
+  if (!dryRun) {
+    for (const r of results) {
+      if (r.outcome === "filled") {
+        S.filledThisSession.amount += r.amount;
+        S.filledThisSession.pots += 1;
+      }
+    }
+    await load();
+    // Personal done and joint still short: bring the next step into view.
+    const joint = S.groups.joint;
+    if (kind === "personal" && !stoppedBy && joint && summarise(joint.pots, S.excluded).total > 0) {
+      document.getElementById("joint")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    }
+  }
 }
 
 /** Pots switched off that would otherwise need money. @param {Group} group */
@@ -379,14 +399,41 @@ function viewMain() {
     jointBalance: j?.balance ?? 0,
   });
 
+  const allFull = (ps?.total ?? 0) === 0 && (js?.total ?? 0) === 0;
   return [
     header(),
-    modeControl(),
+    allFull && S.filledThisSession.pots > 0 ? paydayDone() : modeControl(),
     S.error && h("p", { class: "card note bad", style: { marginBottom: "18px" } }, icon("alert"), h("span", null, S.error)),
     p ? groupView("personal", p) : h("p", { class: "card muted" }, "No personal account found."),
     j ? groupView("joint", j, plan) : h("p", { class: "card muted", style: { marginTop: "30px" } }, "No joint account found."),
     appearance(),
   ];
+}
+
+/** @param {number} at */
+function freshness(at) {
+  const mins = Math.floor((Date.now() - at) / 60_000);
+  const time = new Date(at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const ago = mins < 1 ? "just now" : mins === 1 ? "1 minute ago" : `${mins} minutes ago`;
+  const stale = mins >= 10;
+  return h("p", { class: `freshness${stale ? " stale" : ""}` },
+    icon(stale ? "clock" : "check", "icon icon-sm"),
+    h("span", null, `Balances from ${time} · ${ago}`, stale ? ". Refresh before filling." : ""),
+  );
+}
+
+function paydayDone() {
+  const { amount, pots } = S.filledThisSession;
+  const off = (["personal", "joint"]).flatMap((k) => { const g = S.groups[/** @type {Kind} */ (k)]; return g ? switchedOff(g) : []; });
+  return h("section", { class: "card payday-done", "aria-label": "Payday done" },
+    h("span", { class: "tick" }, icon("check")),
+    h("h1", null, "Payday done"),
+    h("p", null, h("span", { class: "num positive" }, formatGBP(amount)), ` into ${pots} pot${pots === 1 ? "" : "s"}. `,
+      off.length
+        ? `Every pot you selected is at its goal. Still switched off: ${off.map((p) => p.name).join(", ")}.`
+        : "Every bill pot is at its goal, so the bills are covered for the month."),
+    S.loadedAt > 0 && freshness(S.loadedAt),
+  );
 }
 
 function modeControl() {
@@ -401,6 +448,7 @@ function modeControl() {
       ? h("p", { class: "mode-note" }, "Practice shows exactly what would go into each pot. Nothing moves.")
       : h("p", { class: "mode-note live" }, icon("shield", "icon icon-sm"),
           MOCK ? "Live: fills move mock money between made-up pots." : "Live: fills move real money. You'll confirm first."),
+    S.loadedAt > 0 && freshness(S.loadedAt),
   );
 }
 
@@ -447,6 +495,14 @@ function groupView(kind, group, plan) {
         : justFilled ? `All ${kind} pots are full. Nicely done.`
         : `All ${kind} pots are full.`),
     ));
+    const jointShort = kind === "personal" && S.groups.joint ? summarise(S.groups.joint.pots, S.excluded).total : 0;
+    if (jointShort > 0) {
+      body.push(h("button", {
+        class: "btn-sm next-step",
+        "data-key": "next-joint",
+        onclick: () => document.getElementById("joint")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      }, "Next: joint pots (", money(jointShort), ")", icon("arrow", "icon icon-sm")));
+    }
   } else if (stuck.length) {
     body.push(
       h("div", null,
@@ -502,14 +558,14 @@ function groupView(kind, group, plan) {
 
   if (run) body.push(resultsView(kind, run, stuck.length > 0));
 
-  return h("section", { class: "group", "aria-labelledby": `h-${kind}` },
+  return h("section", { class: "group", id: kind, "aria-labelledby": `h-${kind}` },
     h("div", { class: "group-label" },
       h("h2", { id: `h-${kind}` }, title),
       h("span", null, h("b", null, money(group.balance)), " available"),
     ),
     move,
     h("div", { class: "card summary" }, body),
-    rows.length > 0 && h("ul", { class: "list", "aria-label": `${title} pots` }, rows.map((r) => potRow(r))),
+    potList(kind, title, rows),
   );
 }
 
@@ -564,6 +620,33 @@ function moveCard(plan, jointBalance, jointTotal) {
   );
 }
 
+/**
+ * Pots still short (and switched-off ones) are listed; full pots fold into one row.
+ * @param {Kind} kind @param {string} title @param {{ pot: Pot, shortfall: number, excluded: boolean }[]} rows
+ */
+function potList(kind, title, rows) {
+  if (!rows.length) return null;
+  const open = rows.filter((r) => r.shortfall > 0);
+  const full = rows.filter((r) => r.shortfall === 0);
+  const showFull = S.showFull[kind];
+  const toggle = full.length > 0 && h("li", { class: "full-toggle" },
+    h("button", {
+      class: "full-toggle-btn",
+      "aria-expanded": String(showFull),
+      "data-key": `full-${kind}`,
+      onclick: () => { S.showFull[kind] = !showFull; render(); },
+    },
+      h("span", { class: "tick" }, icon("check", "icon icon-sm")),
+      h("span", { class: "grow" }, `${full.length} pot${full.length === 1 ? "" : "s"} already full`),
+      h("span", { class: `chevron${showFull ? " open" : ""}` }, icon("arrow", "icon icon-sm")),
+    ));
+  return h("ul", { class: "list", "aria-label": `${title} pots` },
+    open.map((r) => potRow(r)),
+    toggle,
+    showFull && full.map((r) => potRow(r)),
+  );
+}
+
 /** @param {{ pot: Pot, shortfall: number, excluded: boolean }} r */
 function potRow({ pot, shortfall, excluded }) {
   const goal = /** @type {number} */ (pot.goal_amount);
@@ -582,7 +665,7 @@ function potRow({ pot, shortfall, excluded }) {
       ? h("div", { class: "pot-amount full" }, icon("check", "icon icon-sm"), "Full")
       : h("div", { class: `pot-amount num${excluded ? "" : " owed"}` },
           formatGBP(shortfall), h("small", null, excluded ? "off" : "to go")),
-    h("button", {
+    full ? h("span", { "aria-hidden": "true" }) : h("button", {
       class: "switch",
       role: "switch",
       "aria-checked": String(!excluded),
@@ -711,6 +794,8 @@ function confirmFill(kind, items, total, off) {
 }
 
 // ---------------------------------------------------------------- boot
+
+setInterval(() => { if (S.screen === "main" && !busy() && !document.querySelector("dialog[open]")) render(); }, 30_000);
 
 if (MOCK) {
   document.getElementById("app")?.before(h("div", { class: "mock-banner" }, "Mock data · nothing is real"));
