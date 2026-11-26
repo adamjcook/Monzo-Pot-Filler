@@ -1,0 +1,17 @@
+{
+  "name": "monzo-pot-filler",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/*.test.js",
+    "typecheck": "tsc -p tsconfig.json && tsc -p public/jsconfig.json",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261125.1",
+    "typescript": "~5.9.3",
+    "wrangler": "^4.168.0"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "monzo-pot-filler",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-11-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    // The Worker only runs for these paths; everything else is served straight from ./public.
+    "run_worker_first": ["/login", "/callback", "/api/*"]
+  },
+  // Never log request details: requests carry Monzo access tokens.
+  "observability": { "enabled": false },
+  "vars": {
+    // Set this to the client ID from developers.monzo.com (it isn't secret).
+    "MONZO_CLIENT_ID": "",
+    // Optional: your Monzo user ID (user_...), to refuse sign-ins from anyone else.
+    "ALLOWED_USER_ID": "",
+    // Cap on a single pot deposit, in pence (£2,000).
+    "MAX_DEPOSIT_PENCE": "200000"
+  }
+  // Secret: wrangler secret put MONZO_CLIENT_SECRET
+}
