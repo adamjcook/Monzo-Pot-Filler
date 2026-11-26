@@ -97,6 +97,10 @@ const S = {
   showFull: { personal: false, joint: false },
   /** Real deposits made this session, for the "Payday done" close. */
   filledThisSession: { amount: 0, pots: 0 },
+  /** Successful result rows are folded behind "Show N". @type {Record<Kind, boolean>} */
+  showResults: { personal: false, joint: false },
+  /** "Payday done" has been brought into view once. */
+  paydayShown: false,
   copied: false,
   light: document.documentElement.getAttribute("data-theme") === "light",
 };
@@ -185,6 +189,7 @@ async function runFill(kind) {
   /** @type {Run} */
   const run = { results: [], dryRun, running: true, stopped: "" };
   S.runs[kind] = run;
+  S.showResults[kind] = false;
   announce(dryRun ? "Checking pots…" : "Filling pots…");
   render();
   const { results, stoppedBy } = await fillPots({
@@ -218,11 +223,6 @@ async function runFill(kind) {
       }
     }
     await load();
-    // Personal done and joint still short: bring the next step into view.
-    const joint = S.groups.joint;
-    if (kind === "personal" && !stoppedBy && joint && summarise(joint.pots, S.excluded).total > 0) {
-      document.getElementById("joint")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
-    }
   }
 }
 
@@ -278,6 +278,7 @@ const ICONS = {
   copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/>',
   lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
   shield: '<path d="M12 3.5l7 3v5.5c0 4.2-3 7.6-7 8.5-4-.9-7-4.3-7-8.5V6.5z"/><path d="M9 12l2.2 2.2L15.5 10"/>',
+  chevron: '<path d="M9 6l6 6-6 6"/>',
   transfer: '<path d="M4 8h14"/><path d="M14 4l4 4-4 4"/><path d="M20 16H6"/><path d="M10 12l-4 4 4 4"/>',
 };
 
@@ -290,9 +291,18 @@ function icon(name, cls = "icon") {
 
 // ---------------------------------------------------------------- views
 
-function render() {
+/**
+ * Rebuilds the screen. The control the user just used (anchorKey, else the focused
+ * one) stays at the same spot on screen, so content appearing above it never shoves
+ * the list under their thumb.
+ * @param {string} [anchorKey]
+ */
+function render(anchorKey) {
   const root = /** @type {HTMLElement} */ (document.getElementById("app"));
   const focusKey = /** @type {HTMLElement | null} */ (document.activeElement)?.dataset?.key;
+  const key = anchorKey ?? focusKey;
+  const before = key ? root.querySelector(`[data-key="${CSS.escape(key)}"]`) : null;
+  const anchorTop = before ? before.getBoundingClientRect().top : null;
   const view =
     S.screen === "signin" ? viewSignIn()
     : S.screen === "approve" ? viewApprove()
@@ -300,13 +310,27 @@ function render() {
     : S.screen === "loading" ? viewLoading()
     : viewMain();
   root.replaceChildren(...view.flat(Infinity).filter(Boolean));
-  if (focusKey) /** @type {HTMLElement | null} */ (root.querySelector(`[data-key="${CSS.escape(focusKey)}"]`))?.focus();
+  const after = key ? /** @type {HTMLElement | null} */ (root.querySelector(`[data-key="${CSS.escape(key)}"]`)) : null;
+  if (after && anchorTop != null) {
+    const shift = after.getBoundingClientRect().top - anchorTop;
+    if (shift) window.scrollBy(0, shift);
+  }
+  if (focusKey) /** @type {HTMLElement | null} */ (root.querySelector(`[data-key="${CSS.escape(focusKey)}"]`))?.focus({ preventScroll: true });
+
+  // The session's close, shown once: bring it into view and say it out loud.
+  const done = root.querySelector(".payday-done");
+  if (done && !S.paydayShown) {
+    S.paydayShown = true;
+    window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    /** @type {HTMLElement} */ (done).focus({ preventScroll: true });
+    announce(/** @type {HTMLElement} */ (done).innerText || "Payday done");
+  }
 }
 
 function header() {
   return h("header", { class: "app-header" },
     h("img", { class: "logo", src: "/icon.svg", alt: "" }),
-    h("span", { class: "wordmark" }, "Pot Filler"),
+    h("h1", { class: "wordmark" }, "Pot Filler"),
     S.screen === "main" &&
       h("button", {
         class: "btn-icon btn-quiet",
@@ -425,13 +449,17 @@ function freshness(at) {
 function paydayDone() {
   const { amount, pots } = S.filledThisSession;
   const off = (["personal", "joint"]).flatMap((k) => { const g = S.groups[/** @type {Kind} */ (k)]; return g ? switchedOff(g) : []; });
-  return h("section", { class: "card payday-done", "aria-label": "Payday done" },
+  const jointOff = S.groups.joint ? switchedOff(S.groups.joint) : [];
+  const jointLeft = S.groups.joint?.balance ?? 0;
+  return h("section", { class: "card payday-done", "aria-label": "Payday done", tabindex: "-1" },
     h("span", { class: "tick" }, icon("check")),
     h("h1", null, "Payday done"),
     h("p", null, h("span", { class: "num positive" }, formatGBP(amount)), ` into ${pots} pot${pots === 1 ? "" : "s"}. `,
       off.length
         ? `Every pot you selected is at its goal. Still switched off: ${off.map((p) => p.name).join(", ")}.`
         : "Every bill pot is at its goal, so the bills are covered for the month."),
+    jointOff.length > 0 && jointLeft > 0 &&
+      h("p", null, h("span", { class: "num" }, formatGBP(jointLeft)), ` is still in joint, ready for ${jointOff.map((p) => p.name).join(", ")} when you switch it back on.`),
     S.loadedAt > 0 && freshness(S.loadedAt),
   );
 }
@@ -492,6 +520,7 @@ function groupView(kind, group, plan) {
       h("span", { class: "tick" }, icon("check")),
       h("span", null,
         rows.length === 0 ? `No ${kind} pots have a goal yet.`
+        : off.length ? `Every selected ${kind} pot is full.`
         : justFilled ? `All ${kind} pots are full. Nicely done.`
         : `All ${kind} pots are full.`),
     ));
@@ -501,7 +530,7 @@ function groupView(kind, group, plan) {
         class: "btn-sm next-step",
         "data-key": "next-joint",
         onclick: () => document.getElementById("joint")?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      }, "Next: joint pots (", money(jointShort), ")", icon("arrow", "icon icon-sm")));
+      }, h("span", null, "Next: joint pots (", money(jointShort), ")"), icon("arrow", "icon icon-sm")));
     }
   } else if (stuck.length) {
     body.push(
@@ -525,12 +554,12 @@ function groupView(kind, group, plan) {
 
   if (off.length) {
     body.push(h("p", { class: "switched-off" },
-      h("span", null, `${off.length === 1 ? "1 pot" : `${off.length} pots`} switched off: ${off.map((p) => p.name).join(", ")}.`),
+      h("span", null, `Switched off: ${off.map((p) => `${p.name} (${formatGBP(Math.max(0, (p.goal_amount ?? 0) - p.balance))} short)`).join(", ")}.`),
       h("button", {
         class: "btn-link",
         "data-key": `on-${kind}`,
         disabled: busy(),
-        onclick: () => { for (const p of off) S.excluded.delete(p.id); saveExcluded(); render(); },
+        onclick: () => { for (const p of off) S.excluded.delete(p.id); saveExcluded(); render(`fill-${kind}`); },
       }, off.length === 1 ? "Turn it back on" : "Turn them back on"),
     ));
   }
@@ -544,7 +573,7 @@ function groupView(kind, group, plan) {
     body.push(h("button", {
       class: stuck.length ? "btn-big" : "btn-primary btn-big",
       "data-key": `fill-${kind}`,
-      disabled: busy() || S.refreshing || blocked,
+      disabled: busy() || S.refreshing || (blocked && !S.dryRun),
       onclick: async () => {
         if (needsMonzo) await load();
         runFill(kind);
@@ -593,6 +622,7 @@ function moveCard(plan, jointBalance, jointTotal) {
     h("p", null,
       "Joint has ", h("b", null, money(jointBalance)), " and its pots need ", h("b", null, money(jointTotal)),
       ". Transfer the difference from your account to joint in the Monzo app, then tap Refresh."),
+    lockedNote(S.groups.joint),
     warning && h("div", { style: { marginTop: "10px" } }, warning),
     h("div", { class: "btn-row" },
       h("button", {
@@ -634,17 +664,32 @@ function potList(kind, title, rows) {
       class: "full-toggle-btn",
       "aria-expanded": String(showFull),
       "data-key": `full-${kind}`,
-      onclick: () => { S.showFull[kind] = !showFull; render(); },
+      onclick: () => { S.showFull[kind] = !showFull; render(`full-${kind}`); },
     },
       h("span", { class: "tick" }, icon("check", "icon icon-sm")),
       h("span", { class: "grow" }, `${full.length} pot${full.length === 1 ? "" : "s"} already full`),
-      h("span", { class: `chevron${showFull ? " open" : ""}` }, icon("arrow", "icon icon-sm")),
+      h("span", { class: `chevron${showFull ? " open" : ""}` }, icon("chevron", "icon icon-sm")),
     ));
   return h("ul", { class: "list", "aria-label": `${title} pots` },
     open.map((r) => potRow(r)),
     toggle,
     showFull && full.map((r) => potRow(r)),
   );
+}
+
+/** Selected, short pots that Monzo shows as locked. @param {Group | null} group */
+function lockedShort(group) {
+  return group ? summarise(group.pots, S.excluded).toFill.filter((r) => r.pot.locked) : [];
+}
+
+/** @param {Group | null} group */
+function lockedNote(group) {
+  const locked = lockedShort(group);
+  if (!locked.length) return null;
+  const sum = locked.reduce((n, r) => n + r.shortfall, 0);
+  return h("p", { class: "note warn" }, icon("lock"),
+    h("span", null,
+      `Includes ${formatGBP(sum)} for ${locked.map((r) => r.pot.name).join(", ")}, locked in Monzo, which may refuse it. Unlock it first, or switch it off to leave it out.`));
 }
 
 /** @param {{ pot: Pot, shortfall: number, excluded: boolean }} r */
@@ -672,10 +717,16 @@ function potRow({ pot, shortfall, excluded }) {
       "aria-label": `Include ${pot.name}`,
       "data-key": `pot-${pot.id}`,
       disabled: busy(),
-      onclick: () => {
+      onclick: (/** @type {MouseEvent} */ e) => {
+        const btn = /** @type {HTMLElement} */ (e.currentTarget);
+        if (btn.dataset.pending) return;
+        btn.dataset.pending = "1";
+        // Let the knob slide on the element the user touched, then rebuild around it.
+        btn.setAttribute("aria-checked", String(excluded));
         if (excluded) S.excluded.delete(pot.id); else S.excluded.add(pot.id);
         saveExcluded();
-        render();
+        const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        setTimeout(() => render(`pot-${pot.id}`), reduce ? 0 : 170);
       },
     }),
   );
@@ -691,11 +742,15 @@ function progressText(run) {
 function resultsHeadline(run) {
   const filled = run.results.filter((r) => r.outcome === "filled" || r.outcome === "would_fill");
   const sum = filled.reduce((s, r) => s + r.amount, 0);
-  const failed = run.results.filter((r) => r.outcome === "failed").length;
+  const failed = run.results.filter((r) => r.outcome === "failed" && !S.excluded.has(r.potId)).length;
   const pots = (/** @type {number} */ n) => `${n} pot${n === 1 ? "" : "s"}`;
   if (run.running) return { text: progressText(run), tone: "" };
   if (run.dryRun) {
-    return { text: `Practice: would put ${formatGBP(sum)} into ${pots(filled.length)}${failed ? `, ${failed} couldn't` : ""}`, tone: failed ? "bad" : "" };
+    const waiting = filled.filter((r) => r.message).length;
+    return {
+      text: `Practice: would put ${formatGBP(sum)} into ${pots(filled.length)}${failed ? `, ${failed} couldn't` : ""}${waiting ? ", once the money is moved in" : ""}`,
+      tone: failed ? "bad" : "",
+    };
   }
   if (failed || run.stopped) {
     return {
@@ -712,12 +767,20 @@ function resultsView(kind, run, failuresShownAbove) {
   const head = resultsHeadline(run);
   // Problems first once the run is over; while it runs, keep the running order.
   // When the summary above already names the failed pots, don't repeat them here.
-  const order = { failed: 0, filled: 1, would_fill: 1, skipped: 2, not_attempted: 3 };
-  const rows = run.running
+  const order = { failed: 0, not_attempted: 1, filled: 2, would_fill: 2, skipped: 3 };
+  /** A failure the owner has since dealt with by switching the pot off. @param {Result} r */
+  const settled = (r) => r.outcome === "failed" && S.excluded.has(r.potId);
+  const shown = run.running
     ? run.results
-    : [...run.results]
+    : run.results
+        .map((r) => (settled(r) ? { ...r, outcome: /** @type {const} */ ("skipped"), message: "Switched off after this run" } : r))
         .filter((r) => !(failuresShownAbove && r.outcome === "failed"))
         .sort((a, b) => order[a.outcome] - order[b.outcome]);
+  // Problems stay open; the routine rows fold behind one line once the run is over.
+  const routine = (/** @type {Result} */ r) => r.outcome === "filled" || r.outcome === "would_fill" || r.outcome === "skipped";
+  const open = S.showResults[kind];
+  const foldable = run.running ? [] : shown.filter(routine);
+  const rows = run.running ? shown : shown.filter((r) => !routine(r) || open);
   return h("div", { class: "results" },
     h("div", { class: `results-head ${head.tone}` },
       h("h3", null,
@@ -728,11 +791,17 @@ function resultsView(kind, run, failuresShownAbove) {
       !run.running && h("button", {
         class: "btn-sm btn-quiet",
         "data-key": `clear-${kind}`,
-        onclick: () => { S.runs[kind] = null; render(); },
+        onclick: () => { S.runs[kind] = null; render(`fill-${kind}`); },
       }, "Clear"),
     ),
     run.stopped && h("p", { class: "note bad", style: { margin: "4px 0 8px" } }, h("span", null, `Stopped: ${run.stopped}`)),
-    h("ul", null, rows.map(resultRow)),
+    rows.length > 0 && h("ul", null, rows.map(resultRow)),
+    foldable.length > 0 && h("button", {
+      class: "btn-link results-toggle",
+      "aria-expanded": String(open),
+      "data-key": `results-${kind}`,
+      onclick: () => { S.showResults[kind] = !open; render(`results-${kind}`); },
+    }, open ? "Hide details" : `Show all ${foldable.length} pot${foldable.length === 1 ? "" : "s"}`),
   );
 }
 
@@ -743,7 +812,7 @@ const RESULT_ICON = { filled: "check", would_fill: "arrow", skipped: "dash", fai
 function resultRow(r) {
   const label = {
     filled: "",
-    would_fill: "",
+    would_fill: r.message,
     skipped: r.message,
     failed: r.message,
     not_attempted: r.message ? "Not tried: stopped after an earlier problem" : "Waiting",
@@ -778,6 +847,7 @@ function confirmFill(kind, items, total, off) {
         h("ul", { class: "sheet-list" },
           items.map((i) => h("li", null, h("span", null, i.name), money(i.amount)))),
         h("div", { class: "sheet-total" }, h("span", null, "Total"), money(total)),
+        lockedNote(S.groups[kind]),
         off.length > 0 && h("p", { class: "note warn" }, icon("alert"),
           h("span", null, `Not filling ${off.map((p) => p.name).join(", ")}: switched off.`)),
         h("div", { class: "sheet-actions" },

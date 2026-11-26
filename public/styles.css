@@ -232,6 +232,8 @@ a {
 }
 
 .app-header .wordmark {
+  margin: 0;
+  line-height: 1.2;
   font-size: var(--fs-heading);
   font-weight: var(--fw-bold);
   letter-spacing: -0.012em;
@@ -332,7 +334,7 @@ button:disabled {
 }
 
 .btn-link {
-  min-height: 32px;
+  min-height: 44px;
   padding: 0 4px;
   background: transparent;
   color: var(--brand-fg);
@@ -780,12 +782,21 @@ button:disabled {
 
 .full-toggle-btn .chevron {
   color: var(--text-3);
-  transform: rotate(90deg);
   transition: transform 150ms ease-out;
 }
 
 .full-toggle-btn .chevron.open {
-  transform: rotate(-90deg);
+  transform: rotate(90deg);
+}
+
+.results-toggle {
+  justify-self: start;
+  margin-top: 2px;
+  padding: 0;
+}
+
+.payday-done:focus {
+  outline: none;
 }
 
 .full-toggle + .pot::before,
@@ -847,6 +858,12 @@ button:disabled {
 .chip-warn {
   background: color-mix(in srgb, var(--debt) 16%, transparent);
   color: var(--debt);
+}
+
+/* light theme: a deeper amber so the small tag text clears 4.5:1 on its tint */
+:root[data-theme='light'] .chip-warn {
+  background: color-mix(in srgb, #9a4c06 16%, #ffffff);
+  color: #9a4c06;
 }
 
 .chip .icon {
@@ -979,7 +996,7 @@ button:disabled {
 }
 
 .result.would_fill .icon {
-  color: var(--brand-fg);
+  color: var(--text-2);
 }
 
 .result.failed .icon,
@@ -1006,7 +1023,7 @@ button:disabled {
 .welcome .logo {
   width: 56px;
   height: 56px;
-  border-radius: 15px;
+  border-radius: 16px;
   margin-bottom: 22px;
 }
 
@@ -1106,8 +1123,7 @@ dialog[open] {
 
 @keyframes sheet-up {
   from {
-    transform: translateY(24px);
-    opacity: 0.6;
+    transform: translateY(32px);
   }
 }
 
@@ -1120,7 +1136,7 @@ dialog[open] {
 .sheet .grabber {
   width: 36px;
   height: 5px;
-  border-radius: 3px;
+  border-radius: 999px;
   background: var(--surface-3);
   margin: 0 auto 4px;
 }

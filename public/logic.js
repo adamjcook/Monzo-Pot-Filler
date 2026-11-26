@@ -197,13 +197,15 @@ export async function fillPots({ api, accountId, pots, dryRun, day = today(), on
         continue;
       }
       r.amount = amount;
-      if (amount > available) {
-        throw new ApiError(0, "insufficient_funds");
-      }
       if (dryRun) {
-        Object.assign(r, { outcome: "would_fill", after: fresh.balance + amount, message: "" });
+        // Practice never stops for money: it shows the whole plan and marks what can't be covered yet.
+        const covered = amount <= available;
+        Object.assign(r, { outcome: "would_fill", after: fresh.balance + amount, message: covered ? "" : "Needs money moved in first" });
         available -= amount;
         continue;
+      }
+      if (amount > available) {
+        throw new ApiError(0, "insufficient_funds");
       }
       const id = await dedupeId(fresh.id, fresh.balance, amount, day);
       const updated = await api.deposit(fresh.id, accountId, amount, id);

@@ -213,3 +213,14 @@ test("a retry from the same state reuses the dedupe id (Monzo can't double-fill)
   assert.equal(again.results[0].outcome, "skipped"); // fresh read sees it full
   assert.equal((await api.pots(acc)).find((p) => p.id === phone.id).balance, 2400);
 });
+
+test("practice shows the whole plan even when the account can't cover it yet", async () => {
+  const api = mockApi();
+  const acc = "acc_mock_joint"; // £125.50 against ~£1,773 of shortfall
+  const targets = await shortPots(api, acc);
+  const { results, stoppedBy } = await fillPots({ api, accountId: acc, pots: targets, dryRun: true });
+  assert.equal(stoppedBy, null);
+  assert.ok(results.every((r) => r.outcome === "would_fill"));
+  assert.ok(results.some((r) => r.message === "Needs money moved in first"));
+  assert.ok(results.some((r) => r.message === ""));
+});
