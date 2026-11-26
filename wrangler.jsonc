@@ -12,8 +12,8 @@
   // Never log request details: requests carry Monzo access tokens.
   "observability": { "enabled": false },
   "vars": {
-    // Set this to the client ID from developers.monzo.com (it isn't secret).
-    "MONZO_CLIENT_ID": "",
+    // OAuth client ID from developers.monzo.com (not secret).
+    "MONZO_CLIENT_ID": "oauth2client_0000BCr1INv8JZBBaDX5pD",
     // Optional: your Monzo user ID (user_...), to refuse sign-ins from anyone else.
     "ALLOWED_USER_ID": "",
     // Cap on a single pot deposit, in pence (£2,000).
