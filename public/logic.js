@@ -17,7 +17,7 @@
  * }} Api
  * @typedef {"filled" | "would_fill" | "skipped" | "failed" | "not_attempted"} Outcome
  * @typedef {{ potId: string, name: string, outcome: Outcome, amount: number,
- *   before?: number, after?: number, message: string }} Result
+ *   before?: number, after?: number, message: string, code?: string }} Result
  */
 
 export class ApiError extends Error {
@@ -135,10 +135,13 @@ export function describeError(err) {
     if (isAuthError(err)) return "Signed out (token expired). Sign in again.";
     if (err.status === 403) return "Monzo refused (403). Is the connection approved in the Monzo app?";
     if (err.status === 429) return "Monzo rate limit hit. Wait a minute and run again.";
-    if (err.status >= 500) return `Monzo error (HTTP ${err.status})`;
-    return `Monzo said no (HTTP ${err.status}${err.code ? `, ${err.code}` : ""})`;
+    if (err.status >= 500) return `Monzo is having trouble right now (error ${err.status}). Try again in a few minutes.`;
+    if (/locked/.test(err.code)) return "This pot is locked in Monzo, so it won't take deposits from here";
+    if (/not_found|pot_not_in_account/.test(err.code)) return "Monzo couldn't find this pot any more";
+    if (err.code.startsWith("proxy.amount_over_cap")) return "More than this app is allowed to move into one pot";
+    return `Monzo didn't accept this deposit${err.code ? ` (${err.code})` : ""}`;
   }
-  return "Couldn't reach Monzo";
+  return "Couldn't reach Monzo. Check your signal and try again.";
 }
 
 /**
@@ -198,7 +201,7 @@ export async function fillPots({ api, accountId, pots, dryRun, day = today(), on
         throw new ApiError(0, "insufficient_funds");
       }
       if (dryRun) {
-        Object.assign(r, { outcome: "would_fill", after: fresh.balance + amount, message: "Dry run: nothing moved" });
+        Object.assign(r, { outcome: "would_fill", after: fresh.balance + amount, message: "" });
         available -= amount;
         continue;
       }
@@ -210,6 +213,7 @@ export async function fillPots({ api, accountId, pots, dryRun, day = today(), on
     } catch (err) {
       r.outcome = "failed";
       r.message = describeError(err);
+      if (err instanceof ApiError) r.code = err.code;
       if (isFatal(err)) stoppedBy = err;
     } finally {
       onProgress?.(results.map((x) => ({ ...x })));
