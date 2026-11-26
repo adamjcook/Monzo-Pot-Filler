@@ -1,0 +1,658 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-26T23:05:32+00:00",
+  "title": "Design System: Pot Filler",
+  "extensions": {
+    "colorMeta": {
+      "icon-green": {
+        "role": "primary",
+        "displayName": "Deep Icon Green",
+        "canonical": "oklch(47.9% 0.071 162)",
+        "tonalRamp": [
+          "#001006",
+          "#092c1e",
+          "#224c38",
+          "#3b6d55",
+          "#5d8f76",
+          "#85b19a",
+          "#aed4bf",
+          "#d8f7e6"
+        ]
+      },
+      "icon-green-light": {
+        "role": "primary",
+        "displayName": "Deep Icon Green (light theme)",
+        "canonical": "oklch(44.2% 0.064 162)",
+        "tonalRamp": [
+          "#001007",
+          "#0e2c1e",
+          "#264b39",
+          "#406c57",
+          "#618e77",
+          "#88b09b",
+          "#b1d3c0",
+          "#daf7e7"
+        ]
+      },
+      "green-ink": {
+        "role": "primary",
+        "displayName": "Green Ink",
+        "canonical": "oklch(70.0% 0.090 162)",
+        "tonalRamp": [
+          "#001105",
+          "#002e1b",
+          "#134e36",
+          "#2c7052",
+          "#509273",
+          "#7bb497",
+          "#a6d6bd",
+          "#d2fae4"
+        ]
+      },
+      "owed-amber": {
+        "role": "secondary",
+        "displayName": "Owed Amber",
+        "canonical": "oklch(78.5% 0.129 64)",
+        "tonalRamp": [
+          "#1e0200",
+          "#411700",
+          "#673200",
+          "#8f4f00",
+          "#b47126",
+          "#d3975c",
+          "#f2bd8c",
+          "#ffe5bc"
+        ]
+      },
+      "owed-amber-light": {
+        "role": "secondary",
+        "displayName": "Owed Amber (light theme)",
+        "canonical": "oklch(57.5% 0.143 53)",
+        "tonalRamp": [
+          "#220000",
+          "#471000",
+          "#6f2a00",
+          "#994600",
+          "#bf6828",
+          "#de905d",
+          "#fdb88d",
+          "#ffe0bd"
+        ]
+      },
+      "filled-teal": {
+        "role": "tertiary",
+        "displayName": "Filled Teal",
+        "canonical": "oklch(80.1% 0.120 184)",
+        "tonalRamp": [
+          "#00130e",
+          "#003129",
+          "#005247",
+          "#007568",
+          "#009889",
+          "#52b9ab",
+          "#89dbcf",
+          "#bbfef3"
+        ]
+      },
+      "filled-teal-light": {
+        "role": "tertiary",
+        "displayName": "Filled Teal (light theme)",
+        "canonical": "oklch(50.5% 0.090 184)",
+        "tonalRamp": [
+          "#00110d",
+          "#002e28",
+          "#004e46",
+          "#0e7066",
+          "#3d9388",
+          "#6eb4aa",
+          "#9cd7cd",
+          "#cafaf2"
+        ]
+      },
+      "danger-red": {
+        "role": "error",
+        "displayName": "Danger Red",
+        "canonical": "oklch(71.2% 0.181 23)",
+        "tonalRamp": [
+          "#290000",
+          "#520003",
+          "#7e0718",
+          "#ad2730",
+          "#d54e50",
+          "#f37c79",
+          "#ffa8a3",
+          "#ffd4cf"
+        ]
+      },
+      "danger-red-light": {
+        "role": "error",
+        "displayName": "Danger Red (light theme)",
+        "canonical": "oklch(57.6% 0.209 29)",
+        "tonalRamp": [
+          "#2d0000",
+          "#580000",
+          "#860000",
+          "#b60f06",
+          "#df4333",
+          "#fd7563",
+          "#ffa391",
+          "#ffd1c0"
+        ]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "oklch(16.0% 0.006 156)",
+        "tonalRamp": [
+          "#0a0c0a",
+          "#232624",
+          "#404341",
+          "#5f6260",
+          "#808381",
+          "#a2a6a4",
+          "#c7cac8",
+          "#edefed"
+        ]
+      },
+      "graphite-surface": {
+        "role": "neutral",
+        "displayName": "Graphite Surface",
+        "canonical": "oklch(20.8% 0.007 164)",
+        "tonalRamp": [
+          "#0a0c0b",
+          "#232624",
+          "#3f4341",
+          "#5e6260",
+          "#7f8481",
+          "#a2a6a4",
+          "#c6cac8",
+          "#ecefee"
+        ]
+      },
+      "graphite-raised": {
+        "role": "neutral",
+        "displayName": "Graphite Raised",
+        "canonical": "oklch(25.0% 0.008 170)",
+        "tonalRamp": [
+          "#090c0b",
+          "#222625",
+          "#3f4341",
+          "#5d6360",
+          "#7e8481",
+          "#a1a6a4",
+          "#c6cac8",
+          "#ecefee"
+        ]
+      },
+      "graphite-high": {
+        "role": "neutral",
+        "displayName": "Graphite High",
+        "canonical": "oklch(30.3% 0.009 160)",
+        "tonalRamp": [
+          "#090c0a",
+          "#232624",
+          "#3f4341",
+          "#5d635f",
+          "#7e8480",
+          "#a1a6a3",
+          "#c6cac8",
+          "#ecefed"
+        ]
+      },
+      "mist-text": {
+        "role": "neutral",
+        "displayName": "Mist Text",
+        "canonical": "oklch(97.0% 0.004 157)",
+        "tonalRamp": [
+          "#0a0b0b",
+          "#242524",
+          "#414241",
+          "#5f6260",
+          "#808381",
+          "#a3a6a4",
+          "#c8cac8",
+          "#edefee"
+        ]
+      },
+      "mist-text-2": {
+        "role": "neutral",
+        "displayName": "Mist Text 2",
+        "canonical": "oklch(72.9% 0.008 165)",
+        "tonalRamp": [
+          "#090c0b",
+          "#232624",
+          "#3f4341",
+          "#5d6360",
+          "#7e8481",
+          "#a1a6a4",
+          "#c6cac8",
+          "#ecefee"
+        ]
+      },
+      "mist-text-3": {
+        "role": "neutral",
+        "displayName": "Mist Text 3",
+        "canonical": "oklch(63.1% 0.008 165)",
+        "tonalRamp": [
+          "#090c0b",
+          "#232624",
+          "#3f4341",
+          "#5d6360",
+          "#7e8481",
+          "#a1a6a4",
+          "#c6cac8",
+          "#ecefee"
+        ]
+      },
+      "pale-sage": {
+        "role": "neutral",
+        "displayName": "Pale Sage (light ground)",
+        "canonical": "oklch(96.4% 0.005 165)",
+        "tonalRamp": [
+          "#0a0c0b",
+          "#242625",
+          "#404341",
+          "#5f6260",
+          "#808381",
+          "#a3a6a4",
+          "#c7cac8",
+          "#edefee"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper (light surface)",
+        "canonical": "oklch(100.0% 0.000 90)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "paper-raised": {
+        "role": "neutral",
+        "displayName": "Paper Raised",
+        "canonical": "oklch(95.8% 0.004 157)",
+        "tonalRamp": [
+          "#0a0b0b",
+          "#242524",
+          "#414241",
+          "#5f6260",
+          "#808381",
+          "#a3a6a4",
+          "#c8cac8",
+          "#edefee"
+        ]
+      },
+      "paper-high": {
+        "role": "neutral",
+        "displayName": "Paper High",
+        "canonical": "oklch(92.4% 0.005 165)",
+        "tonalRamp": [
+          "#0a0c0b",
+          "#242625",
+          "#404341",
+          "#5f6260",
+          "#808381",
+          "#a3a6a4",
+          "#c7cac8",
+          "#edefee"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink (light text)",
+        "canonical": "oklch(17.8% 0.006 157)",
+        "tonalRamp": [
+          "#0a0c0b",
+          "#232624",
+          "#404341",
+          "#5f6260",
+          "#808381",
+          "#a3a6a4",
+          "#c7cac8",
+          "#edefed"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "canonical": "oklch(49.4% 0.008 160)",
+        "tonalRamp": [
+          "#0a0c0a",
+          "#232624",
+          "#3f4341",
+          "#5e6260",
+          "#7f8481",
+          "#a2a6a4",
+          "#c6cac8",
+          "#ecefed"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "canonical": "oklch(52.9% 0.009 165)",
+        "tonalRamp": [
+          "#090c0b",
+          "#222624",
+          "#3f4341",
+          "#5d6360",
+          "#7e8481",
+          "#a1a6a4",
+          "#c6cac8",
+          "#ecefed"
+        ]
+      },
+      "mock-yellow": {
+        "role": "neutral",
+        "displayName": "Mock Yellow",
+        "canonical": "oklch(78.7% 0.161 91)",
+        "tonalRamp": [
+          "#190600",
+          "#391f00",
+          "#5c3c00",
+          "#815a00",
+          "#a47c00",
+          "#c4a132",
+          "#e4c771",
+          "#ffeda8"
+        ]
+      },
+      "mock-ink": {
+        "role": "neutral",
+        "displayName": "Mock Ink",
+        "canonical": "oklch(19.4% 0.040 93)",
+        "tonalRamp": [
+          "#0e0b02",
+          "#2a2515",
+          "#48422e",
+          "#686149",
+          "#8a8269",
+          "#aca58f",
+          "#cfc9b6",
+          "#f4eede"
+        ]
+      },
+      "on-green": {
+        "role": "primary",
+        "displayName": "On Green (white)"
+      },
+      "graphite-separator": {
+        "role": "neutral",
+        "displayName": "Graphite Separator"
+      },
+      "paper-separator": {
+        "role": "neutral",
+        "displayName": "Paper Separator"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "App name on the sign-in screen only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "The account's shortfall figure (amber, tabular) and page titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Notice and problem headings, all-full line, sheet total, wordmark (700)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default text and big buttons; weight 450 in dark, 400 in light."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Buttons, results heading, sheet rows, approval steps."
+      },
+      "subhead": {
+        "displayName": "Subhead",
+        "purpose": "Notice and problem body, notes, segment labels (550), small buttons."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Grey sentence-case group labels with right totals; the 13px footnote size."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "Chips and the mock banner only."
+      }
+    },
+    "themes": {
+      "default": "dark",
+      "lightOptIn": "data-theme=\"light\" on <html>, set per phone by theme.js from localStorage pf.theme",
+      "lightMapping": {
+        "icon-green": "icon-green-light",
+        "green-ink": "icon-green-light",
+        "owed-amber": "owed-amber-light",
+        "filled-teal": "filled-teal-light",
+        "danger-red": "danger-red-light",
+        "graphite": "pale-sage",
+        "graphite-surface": "paper",
+        "graphite-raised": "paper-raised",
+        "graphite-high": "paper-high",
+        "graphite-separator": "paper-separator",
+        "mist-text": "ink",
+        "mist-text-2": "ink-2",
+        "mist-text-3": "ink-3"
+      },
+      "inheritedFrom": "MC Bank (FinPair project, src/style.css); keep in step"
+    },
+    "shadows": [
+      {
+        "name": "card-light",
+        "value": "0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06)",
+        "purpose": "Cards and the pot list in light theme only; none in dark."
+      },
+      {
+        "name": "overlay",
+        "value": "0 12px 32px rgb(0 0 0 / 0.5)",
+        "purpose": "Confirm sheet in dark."
+      },
+      {
+        "name": "overlay-light",
+        "value": "0 12px 32px rgb(16 24 40 / 0.16)",
+        "purpose": "Confirm sheet in light."
+      },
+      {
+        "name": "segment-selected-light",
+        "value": "0 1px 2px rgb(0 0 0 / 0.12), 0 0 0 0.5px rgb(0 0 0 / 0.04)",
+        "purpose": "Selected neutral segment in light."
+      },
+      {
+        "name": "switch-knob",
+        "value": "0 2px 4px rgb(0 0 0 / 0.25)",
+        "purpose": "White switch knob."
+      }
+    ],
+    "focus": {
+      "value": "outline: 2px solid color-mix(in srgb, var(--brand-fg) 70%, transparent); outline-offset: 2px",
+      "purpose": "Every button and link."
+    },
+    "motion": [
+      {
+        "name": "press",
+        "value": "120ms ease; transform: scale(0.98)",
+        "purpose": "Button press; fill steps up one graphite level, primary fades to 0.85."
+      },
+      {
+        "name": "switch",
+        "value": "160ms ease",
+        "purpose": "Switch track colour and knob slide (20px)."
+      },
+      {
+        "name": "sheet-up",
+        "value": "260ms cubic-bezier(0.16, 1, 0.3, 1); from translateY(24px), opacity 0.6",
+        "purpose": "Confirm sheet entrance."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "transition: none; animation: none",
+        "purpose": "All motion removed under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "column-max",
+        "value": "560px",
+        "purpose": "Single phone column, centred; no other breakpoints."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Full-width icon-green action inside an account's summary card; one per account.",
+      "html": "<button class=\"ds-btn-primary\">Fill personal pots (£263.91)</button>",
+      "css": ".ds-btn-primary{font-family:'Figtree Variable',system-ui,sans-serif;appearance:none;border:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-weight:600;letter-spacing:-0.006em;transition:transform 120ms ease,background-color 120ms ease,opacity 120ms ease;width:100%;min-height:54px;padding:0 18px;border-radius:16px;font-size:16px;background:var(--brand,#346a51);color:#fff;} .ds-btn-primary:active{transform:scale(0.98);opacity:0.85;} .ds-btn-primary:focus-visible{outline:2px solid color-mix(in srgb,#68b08d 70%,transparent);outline-offset:2px;} .ds-btn-primary:disabled{background:var(--surface-2,#1e2321);color:var(--text-3,#858b88);cursor:default;}"
+    },
+    {
+      "name": "Small Pill Button",
+      "kind": "button",
+      "refersTo": "button-small",
+      "description": "Raised graphite pill with a 16px drawn icon, for secondary actions in a notice card.",
+      "html": "<button class=\"ds-btn-sm\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"8\" y=\"8\" width=\"12\" height=\"12\" rx=\"2.5\"/><path d=\"M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8\"/></svg>Copy amount</button>",
+      "css": ".ds-btn-sm{font-family:'Figtree Variable',system-ui,sans-serif;appearance:none;border:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-weight:600;letter-spacing:-0.006em;transition:transform 120ms ease,background-color 120ms ease,opacity 120ms ease;min-height:36px;padding:0 14px;border-radius:999px;font-size:14px;background:var(--surface-2,#1e2321);color:var(--text,#f3f6f4);} .ds-btn-sm:active{transform:scale(0.98);background:var(--surface-3,#2b302d);} .ds-btn-sm:focus-visible{outline:2px solid color-mix(in srgb,#68b08d 70%,transparent);outline-offset:2px;}"
+    },
+    {
+      "name": "Practice | Live Segmented",
+      "kind": "nav",
+      "refersTo": "segmented-option-live-selected",
+      "description": "Mode control; Practice selects in neutral graphite, Live selects in icon green because real money moves.",
+      "html": "<div><div class=\"ds-seg\"><button aria-pressed=\"false\">Practice</button><button class=\"ds-live\" aria-pressed=\"true\">Live</button></div><p class=\"ds-seg-note\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3.5l7 3v5.5c0 4.2-3 7.6-7 8.5-4-.9-7-4.3-7-8.5V6.5z\"/><path d=\"M9 12l2.2 2.2L15.5 10\"/></svg>Live: fills move real money. You'll confirm first.</p></div>",
+      "css": ".ds-seg{font-family:'Figtree Variable',system-ui,sans-serif;display:flex;gap:2px;padding:3px;border-radius:12px;background:var(--surface-2,#1e2321);} .ds-seg button{font-family:'Figtree Variable',system-ui,sans-serif;appearance:none;border:none;flex:1;min-height:40px;padding:0 10px;border-radius:9px;background:transparent;color:var(--text-2,#a3a9a6);font-size:14px;font-weight:550;cursor:pointer;transition:background-color 120ms ease;} .ds-seg button[aria-pressed=true]{background:var(--surface-3,#2b302d);color:var(--text,#f3f6f4);} .ds-seg .ds-live[aria-pressed=true]{background:var(--brand,#346a51);color:#fff;} .ds-seg button:focus-visible{outline:2px solid color-mix(in srgb,#68b08d 70%,transparent);outline-offset:2px;} .ds-seg-note{font-family:'Figtree Variable',system-ui,sans-serif;display:flex;align-items:center;gap:8px;padding:8px 4px 0;margin:0;font-size:13px;font-weight:550;color:var(--text,#f3f6f4);} .ds-seg-note svg{color:var(--brand-fg,#68b08d);}"
+    },
+    {
+      "name": "Summary Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Group label with available balance, then the account's amber shortfall as the headline and its fill action.",
+      "html": "<section><div class=\"ds-group-label\"><span>Personal</span><span>£2,450.00 available</span></div><div class=\"ds-card\"><div><div class=\"ds-big\">£263.91</div><div class=\"ds-cap\">to fill across 7 pots</div></div><button class=\"ds-fill\">Fill personal pots (£263.91)</button></div></section>",
+      "css": ".ds-group-label{font-family:'Figtree Variable',system-ui,sans-serif;display:flex;justify-content:space-between;gap:12px;padding:0 4px 8px;font-size:13px;font-weight:550;color:var(--text-2,#a3a9a6);font-variant-numeric:tabular-nums;} .ds-card{font-family:'Figtree Variable',system-ui,sans-serif;display:grid;gap:14px;background:var(--surface,#151917);color:var(--text,#f3f6f4);border-radius:20px;padding:18px;} .ds-big{font-size:30px;line-height:1.15;font-weight:700;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;color:var(--debt,#f2a65a);} .ds-cap{font-size:13px;color:var(--text-2,#a3a9a6);margin-top:2px;} .ds-fill{font-family:'Figtree Variable',system-ui,sans-serif;appearance:none;border:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-weight:600;letter-spacing:-0.006em;transition:transform 120ms ease,background-color 120ms ease,opacity 120ms ease;width:100%;min-height:54px;border-radius:16px;font-size:16px;background:var(--brand,#346a51);color:#fff;} .ds-fill:active{transform:scale(0.98);opacity:0.85;} .ds-fill:focus-visible{outline:2px solid color-mix(in srgb,#68b08d 70%,transparent);outline-offset:2px;}"
+    },
+    {
+      "name": "Pot List Row",
+      "kind": "custom",
+      "refersTo": "pot-row",
+      "description": "Grouped list row: name, £X of £Y, teal progress bar, amber amount to go (or teal Full), and the switch.",
+      "html": "<ul class=\"ds-list\"><li class=\"ds-pot\"><div><div class=\"ds-name\">Car insurance</div><div class=\"ds-sub\">£21.50 of £48.12</div><div class=\"ds-bar\"><span style=\"width:45%\"></span></div></div><div class=\"ds-amt\">£26.62<small>to go</small></div><button class=\"ds-switch\" role=\"switch\" aria-checked=\"true\" aria-label=\"Include Car insurance\"></button></li><li class=\"ds-pot\"><div><div class=\"ds-name\">Cleaner <span class=\"ds-chip-warn\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"5\" y=\"10.5\" width=\"14\" height=\"10\" rx=\"2.5\"/><path d=\"M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5\"/></svg>Locked</span></div><div class=\"ds-sub\">£0.00 of £60.00</div><div class=\"ds-bar\"><span style=\"width:0%\"></span></div></div><div class=\"ds-amt\">£60.00<small>to go</small></div><button class=\"ds-switch\" role=\"switch\" aria-checked=\"true\" aria-label=\"Include Cleaner\"></button></li><li class=\"ds-pot\"><div><div class=\"ds-name\">Fuel</div><div class=\"ds-sub\">£120.00 of £120.00</div><div class=\"ds-bar\"><span style=\"width:100%\"></span></div></div><div class=\"ds-amt ds-full\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg>Full</div><button class=\"ds-switch\" role=\"switch\" aria-checked=\"false\" aria-label=\"Include Fuel\"></button></li></ul>",
+      "css": ".ds-list{font-family:'Figtree Variable',system-ui,sans-serif;list-style:none;margin:0;padding:0;background:var(--surface,#151917);color:var(--text,#f3f6f4);border-radius:20px;overflow:hidden;} .ds-pot{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 5.75rem 51px;align-items:center;gap:12px;min-height:64px;padding:12px 16px;} .ds-pot+.ds-pot::before{content:'';position:absolute;top:0;left:16px;right:0;height:1px;background:var(--separator,rgb(255 255 255 / 0.07));} .ds-name{display:flex;align-items:center;gap:6px;font-weight:550;} .ds-sub{font-size:13px;color:var(--text-2,#a3a9a6);font-variant-numeric:tabular-nums;} .ds-bar{height:4px;border-radius:2px;background:var(--surface-3,#2b302d);margin-top:7px;overflow:hidden;} .ds-bar span{display:block;height:100%;border-radius:2px;background:var(--accent,#4dd7c6);} .ds-amt{text-align:right;font-weight:600;color:var(--debt,#f2a65a);font-variant-numeric:tabular-nums;white-space:nowrap;} .ds-amt small{display:block;font-size:13px;font-weight:450;color:var(--text-2,#a3a9a6);} .ds-full{display:flex;align-items:center;justify-content:flex-end;gap:4px;color:var(--accent,#4dd7c6);} .ds-chip-warn{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;letter-spacing:0.01em;padding:2px 7px;border-radius:6px;background:color-mix(in srgb,#f2a65a 16%,transparent);color:var(--debt,#f2a65a);} .ds-switch{position:relative;appearance:none;border:none;width:51px;height:31px;padding:0;border-radius:999px;background:var(--surface-3,#2b302d);cursor:pointer;transition:background-color 160ms ease;} .ds-switch::after{content:'';position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgb(0 0 0 / 0.25);transition:transform 160ms ease;} .ds-switch[aria-checked=true]{background:var(--brand,#346a51);} .ds-switch[aria-checked=true]::after{transform:translateX(20px);} .ds-switch:focus-visible{outline:2px solid color-mix(in srgb,#68b08d 70%,transparent);outline-offset:2px;}"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Small 11px tag on a row; chip-warn (amber on amber tint) marks a Locked pot.",
+      "html": "<span class=\"ds-chip\">Joint</span> <span class=\"ds-chip ds-chip-w\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"5\" y=\"10.5\" width=\"14\" height=\"10\" rx=\"2.5\"/><path d=\"M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5\"/></svg>Locked</span>",
+      "css": ".ds-chip{font-family:'Figtree Variable',system-ui,sans-serif;display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;letter-spacing:0.01em;padding:2px 7px;border-radius:6px;background:var(--surface-2,#1e2321);color:var(--text-2,#a3a9a6);} .ds-chip-w{background:color-mix(in srgb,#f2a65a 16%,transparent);color:var(--debt,#f2a65a);}"
+    },
+    {
+      "name": "Problem Section and Results",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "After a run: a hairline section with a red heading and a plain fix, then the results list with drawn icons.",
+      "html": "<div class=\"ds-card2\"><div class=\"ds-problem\"><h3><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7.5v5.5\"/><path d=\"M12 16.5v.01\"/></svg>Cleaner</h3><p>This pot is locked in Monzo, so it won't take deposits from here. Unlock it in the Monzo app, then tap Refresh.</p></div><div class=\"ds-results\"><h3><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg>Filled 7 pots, £1,713.28. <span class=\"ds-bad\">1 didn't go through.</span></h3><ul><li class=\"ds-r ds-ok\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg><span>Broadband</span><b>£29.00</b></li><li class=\"ds-r ds-fail\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7.5v5.5\"/><path d=\"M12 16.5v.01\"/></svg><span>Cleaner<small>Locked in Monzo</small></span><b>£60.00</b></li></ul></div></div>",
+      "css": ".ds-card2{font-family:'Figtree Variable',system-ui,sans-serif;display:grid;gap:14px;background:var(--surface,#151917);color:var(--text,#f3f6f4);border-radius:20px;padding:18px;} .ds-problem,.ds-results{border-top:1px solid var(--separator,rgb(255 255 255 / 0.07));padding-top:14px;} .ds-problem h3{display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:17px;font-weight:600;color:var(--danger,#ff6b6b);} .ds-problem p{margin:0;font-size:14px;color:var(--text-2,#a3a9a6);} .ds-results h3{display:flex;align-items:center;gap:8px;margin:0 0 4px;font-size:15px;font-weight:600;color:var(--accent,#4dd7c6);} .ds-bad{color:var(--danger,#ff6b6b);} .ds-results ul{list-style:none;margin:0;padding:0;} .ds-r{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:start;padding:9px 0;font-size:14px;} .ds-r+.ds-r{border-top:1px solid var(--separator,rgb(255 255 255 / 0.07));} .ds-r span{font-weight:550;} .ds-r small{display:block;font-size:13px;font-weight:450;color:var(--danger,#ff6b6b);} .ds-ok svg,.ds-ok b{color:var(--accent,#4dd7c6);} .ds-fail svg{color:var(--danger,#ff6b6b);}"
+    },
+    {
+      "name": "Confirm Sheet",
+      "kind": "card",
+      "refersTo": "confirm-sheet",
+      "description": "Bottom sheet confirming every fill: itemised pots, bold total, green Fill and quiet Cancel.",
+      "html": "<div class=\"ds-sheet\"><div class=\"ds-grab\"></div><h2>Fill 7 personal pots?</h2><p class=\"ds-lede\">Each pot is checked again just before its deposit.</p><ul><li><span>Birthdays &amp; gifts</span><span>£25.00</span></li><li><span>Car insurance</span><span>£26.62</span></li></ul><div class=\"ds-total\"><span>Total</span><span>£263.91</span></div><button class=\"ds-go\">Fill £263.91</button><button class=\"ds-cancel\">Cancel</button></div>",
+      "css": ".ds-sheet{font-family:'Figtree Variable',system-ui,sans-serif;display:grid;gap:14px;max-width:560px;padding:10px 20px 18px;border-radius:24px 24px 0 0;background:var(--surface-2,#1e2321);color:var(--text,#f3f6f4);box-shadow:0 12px 32px rgb(0 0 0 / 0.5);animation:ds-up 260ms cubic-bezier(0.16,1,0.3,1);} @keyframes ds-up{from{transform:translateY(24px);opacity:0.6;}} .ds-grab{width:36px;height:5px;border-radius:3px;background:var(--surface-3,#2b302d);margin:0 auto 4px;} .ds-sheet h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-0.02em;} .ds-lede{margin:0;font-size:15px;color:var(--text-2,#a3a9a6);} .ds-sheet ul{list-style:none;margin:0;padding:0;border-top:1px solid var(--separator,rgb(255 255 255 / 0.07));} .ds-sheet li{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--separator,rgb(255 255 255 / 0.07));font-size:15px;font-variant-numeric:tabular-nums;} .ds-total{display:flex;justify-content:space-between;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;} .ds-go{font-family:'Figtree Variable',system-ui,sans-serif;appearance:none;border:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-weight:600;letter-spacing:-0.006em;transition:transform 120ms ease,background-color 120ms ease,opacity 120ms ease;min-height:54px;border-radius:16px;font-size:16px;background:var(--brand,#346a51);color:#fff;} .ds-go:active{transform:scale(0.98);opacity:0.85;} .ds-cancel{font-family:'Figtree Variable',system-ui,sans-serif;appearance:none;border:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-weight:600;letter-spacing:-0.006em;transition:transform 120ms ease,background-color 120ms ease,opacity 120ms ease;min-height:44px;border-radius:14px;font-size:15px;background:transparent;color:var(--text-2,#a3a9a6);} .ds-cancel:active{background:var(--surface-3,#2b302d);} .ds-go:focus-visible,.ds-cancel:focus-visible{outline:2px solid color-mix(in srgb,#68b08d 70%,transparent);outline-offset:2px;}"
+    },
+    {
+      "name": "Mock Banner",
+      "kind": "custom",
+      "refersTo": "mock-banner",
+      "description": "The family's sticky dev/mock marker, shown only in mock mode.",
+      "html": "<div class=\"ds-mock\">Mock data · nothing is real</div>",
+      "css": ".ds-mock{font-family:'Figtree Variable',system-ui,sans-serif;background:#e0b400;color:#1b1400;font-size:11px;font-weight:700;text-align:center;padding:4px 10px;letter-spacing:0.04em;text-transform:uppercase;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Calm Payday Ledger",
+    "overview": "Pot Filler does not have a world of its own. It is a sibling app in the MC Bank family and inherits MC Bank's visual world wholesale: graphite surfaces with a faint lean towards the icon's green, Figtree Variable throughout, a deep icon-green that owns every action, amber for money still owed, teal for money in and \"full\", and grouped lists under small grey labels with totals on the right. The source of that world is MC Bank (the FinPair project's `src/style.css`); this file records how it landed in Pot Filler's own build. **Keep it in step with MC Bank.** When the family's look changes, change it there first and follow it here; never let the two drift into separate identities.\n\nThe screen reads as one exact ledger. Each account's shortfall is the headline figure, the pots sit beneath it as a grouped list, and after a run the screen always says what happened in plain words with drawn icons. Density is comfortable, not sparse: rows are 64px tall in a single column no wider than 560px, built for one thumb on an Android phone.\n\nDark is the default; light is an opt-in per phone (set by `data-theme=\"light\"` on the root before first paint). Both themes are first-class and share every role; only the values move.",
+    "keyCharacteristics": [
+      "Inherited from MC Bank: same palette roles, typeface, radii and list grammar.",
+      "Dark by default, light opt-in per phone; every role defined for both.",
+      "Colour is semantic, never decorative: green acts, amber is owed, teal is in, red has failed.",
+      "Flat tonal layering in dark; a hairline ambient shadow in light.",
+      "One typeface, hierarchy by size and weight, tabular numerals on every money figure.",
+      "Drawn stroke icons on a 24px grid, one family throughout."
+    ],
+    "rules": [
+      {
+        "name": "The Green Means Go Rule",
+        "body": "Icon green marks what you can act on and where real money moves: primary buttons, switches that are on, the selected Live segment, focus. It never decorates, and Practice never wears it (Practice selects in neutral graphite, as MC Bank's segments do).",
+        "section": "colors"
+      },
+      {
+        "name": "The One Meaning Per Hue Rule",
+        "body": "Amber is only money still owed, teal is only money in or full, red is only failure. A pot that is owed reads amber; the same pot once filled reads teal. Never swap them for visual variety.",
+        "section": "colors"
+      },
+      {
+        "name": "The In Step With MC Bank Rule",
+        "body": "These values are MC Bank's. A palette change starts in the family's source and is copied here, never invented here.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Money Rule",
+        "body": "Every money figure uses tabular numerals so amounts align down the list and don't jitter while a run updates them.",
+        "section": "typography"
+      },
+      {
+        "name": "The Shortfall Is The Headline Rule",
+        "body": "On the main screen the largest type is the account's amount owed (headline, amber). Nothing else in the account section is set larger.",
+        "section": "typography"
+      },
+      {
+        "name": "The Thumb Reach Rule",
+        "body": "The account's one action is a full-width 54px button inside its summary card, directly under the figure it acts on, not at the top of the screen.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Dark Rule",
+        "body": "In dark, separate surfaces by graphite step, never by shadow or border. Shadows exist for the sheet and small controls only.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Pill For Small Rule",
+        "body": "Small buttons (36px), icon buttons (44px) and switches are full pills; full-width actions are rounded rectangles. Don't make a big button a pill or a small one a rectangle.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** take every palette, type and radius decision from MC Bank and keep Pot Filler in step with it.",
+      "**Do** define every colour role for both themes; dark is the default and light is opt-in per phone.",
+      "**Do** reserve icon green for actions, switches that are on, focus and the selected Live segment.",
+      "**Do** show money owed in amber, money in and full in teal, and failures in red, nothing else.",
+      "**Do** set every money figure in tabular numerals, with the account's shortfall as the largest figure (30px, 700).",
+      "**Do** use the drawn 24px, 2px-stroke icon family for every icon.",
+      "**Do** separate surfaces by graphite step in dark and by a hairline ambient shadow in light.",
+      "**Do** keep a disabled primary button's label readable (faint text on raised graphite at full opacity)."
+    ],
+    "donts": [
+      "**Don't** invent a separate Pot Filler palette, typeface or icon style; it is an MC Bank sibling.",
+      "**Don't** use teal or amber for buttons or selection; green acts.",
+      "**Don't** colour Practice green; only Live wears it.",
+      "**Don't** add a second typeface or fall back to a system display face for headings.",
+      "**Don't** add card shadows or borders in dark mode.",
+      "**Don't** put a failure in a red-filled box; a problem is a hairline section with a red heading and a plain fix.",
+      "**Don't** set section labels in uppercase with tracking; group labels are small grey sentence case. The mock banner's caps are the family's dev marker, not a label style.",
+      "**Don't** use text glyphs or emoji as icons."
+    ]
+  }
+}
