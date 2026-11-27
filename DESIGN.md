@@ -8,6 +8,7 @@ colors:
   on-green: "#ffffff"
   owed-amber: "#f2a65a"
   owed-amber-light: "#b85c0a"
+  owed-amber-ink-light: "#9a4c06"
   filled-teal: "#4dd7c6"
   filled-teal-light: "#00756a"
   danger-red: "#ff6b6b"
@@ -28,6 +29,7 @@ colors:
   ink: "#0f1210"
   ink-2: "#5e6360"
   ink-3: "#676d6a"
+  sheet-scrim: "rgb(0 0 0 / 0.55)"
   mock-yellow: "#e0b400"
   mock-ink: "#1b1400"
 typography:
@@ -44,6 +46,12 @@ typography:
     lineHeight: 1.15
     letterSpacing: "-0.03em"
     fontFeature: "tnum"
+  sheet-title:
+    fontFamily: "Figtree Variable, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    fontSize: "22px"
+    fontWeight: 700
+    lineHeight: 1.2
+    letterSpacing: "-0.02em"
   title:
     fontFamily: "Figtree Variable, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
     fontSize: "17px"
@@ -314,7 +322,7 @@ Every component is MC Bank's form, used for Pot Filler's job.
 - **Press / Focus:** press scales to 0.98 and steps the fill up one graphite level in 120ms; primary fades to 85%. Focus is a 2px green-ink ring at 70%, offset 2px. Disabled non-primary buttons drop to 40% opacity.
 
 ### Practice | Live segmented control
-A raised graphite track (3px inset, 12px) holding two 40px segments. Practice selected reads neutral (graphite high in dark, white with a small shadow in light); **Live selected wears icon green with white text**. Under it, a one-line meaning in footnote grey; in Live it turns to primary text at 550 with a green shield icon. The same control, without the Live variant, is the Dark | Light choice in the appearance card.
+A raised graphite track (3px inset, 12px) holding two 40px segments. Practice selected reads neutral (graphite high in dark, white with a small shadow in light); **Live selected wears icon green with white text**. Under it, a one-line meaning in footnote grey; in Live it turns to primary text at 550 with a green shield icon. The same control, without the Live variant, is the Dark | Light | System choice in the appearance card.
 
 ### Group label
 Small grey label (13px, 550) on the left, the account's available balance or total on the right, 4px inset to align with card content. A `group-footer` line in faint 13px text may follow the card.
@@ -348,7 +356,7 @@ One family: 24px grid, 2px stroke, round caps and joins, `currentColor`: refresh
 A bottom sheet (native dialog) up to 560px wide with a 24px top radius, raised graphite in dark and white in light, the overlay shadow and a 55% black backdrop. It rises 24px with a fade in 260ms on `cubic-bezier(0.16, 1, 0.3, 1)`. Contents: a 36 by 5px grabber, a 22px 700 title, a grey lede, a scrolling itemised list between hairlines, a bold total row, then the green "Fill £X" big button over a quiet Cancel.
 
 ### Appearance card
-At the foot of every screen: an "Appearance" group label, a card with 8px padding holding the Dark | Light segmented control, and the footer "Just for this phone."
+At the foot of every screen: an "Appearance" group label, a card with 8px padding holding the Dark | Light | System segmented control, and the footer "System follows your phone's light or dark setting. Just for this phone."
 
 ### Mock banner
 The family's dev/mock marker: a sticky full-width strip in mock yellow with dark ink, 11px 700 uppercase with 0.04em tracking ("Mock data · nothing is real"). It appears only in mock mode and is the one uppercase element in the system.

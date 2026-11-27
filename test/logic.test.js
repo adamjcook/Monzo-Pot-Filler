@@ -224,3 +224,15 @@ test("practice shows the whole plan even when the account can't cover it yet", a
   assert.ok(results.some((r) => r.message === "Needs money moved in first"));
   assert.ok(results.some((r) => r.message === ""));
 });
+
+test("practice flags pots Monzo shows as locked", async () => {
+  const api = mockApi();
+  api.simulateTransferToJoint(200_000);
+  const acc = "acc_mock_joint";
+  const { results } = await fillPots({ api, accountId: acc, pots: await shortPots(api, acc), dryRun: true });
+  const cleaner = results.find((r) => r.name === "Cleaner");
+  assert.equal(cleaner.outcome, "would_fill");
+  assert.equal(cleaner.code, "locked");
+  assert.match(cleaner.message, /Locked in Monzo/);
+  assert.ok(results.filter((r) => r.name !== "Cleaner").every((r) => r.message === ""));
+});

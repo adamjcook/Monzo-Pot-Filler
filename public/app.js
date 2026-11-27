@@ -62,6 +62,27 @@ function saveExcluded() {
   local.set(EXCLUDED_KEY, JSON.stringify([...S.excluded]));
 }
 
+const RUNS_KEY = "pf.runs.v1";
+
+/** This tab's fill record: what went in this payday, and the last live run per account. */
+function loadRecord() {
+  try {
+    const v = JSON.parse(session.get(RUNS_KEY) || "null");
+    if (v && typeof v.amount === "number" && typeof v.pots === "number") return v;
+  } catch { /* fall through */ }
+  return null;
+}
+
+function saveRecord() {
+  if (MOCK) return;
+  const live = (/** @type {Run | null} */ r) => (r && !r.dryRun && !r.running ? r : null);
+  session.set(RUNS_KEY, JSON.stringify({
+    amount: S.filledThisSession.amount,
+    pots: S.filledThisSession.pots,
+    runs: { personal: live(S.runs.personal), joint: live(S.runs.joint) },
+  }));
+}
+
 /** @returns {{ token: string, expiresAt: number } | null} */
 function loadSession() {
   try {
@@ -97,6 +118,11 @@ const S = {
   groups: { personal: null, joint: null },
   /** @type {Record<Kind, Run | null>} */
   runs: { personal: null, joint: null },
+  /** After a retry's refresh, the stuck pots that are still locked. @type {Record<Kind, string[]>} */
+  stillLocked: { personal: [], joint: [] },
+  /** @type {Record<Kind, boolean>} */
+  retrying: { personal: false, joint: false },
+  copyFailed: false,
   refreshing: false,
   /** When balances were last read from Monzo (ms). */
   loadedAt: 0,
@@ -141,6 +167,9 @@ async function load() {
     const joint = await loadGroup("joint");
     S.groups = { personal, joint };
     S.loadedAt = Date.now();
+    for (const k of /** @type {Kind[]} */ (["personal", "joint"])) {
+      if (S.runs[k]?.dryRun && !S.runs[k]?.running) S.runs[k] = null;
+    }
     session.set("pf.approved", "1");
     S.screen = "main";
     S.error = "";
@@ -194,9 +223,14 @@ async function runFill(kind) {
     if (!ok) return;
   }
 
+  // A live retry keeps what earlier runs this payday already put in.
+  const earlier = !dryRun && S.runs[kind] && !S.runs[kind]?.dryRun
+    ? /** @type {Run} */ (S.runs[kind]).results.filter((r) => r.outcome === "filled" && !toFill.some((t) => t.pot.id === r.potId))
+    : [];
   /** @type {Run} */
   const run = { results: [], dryRun, running: true, stopped: "" };
   S.runs[kind] = run;
+  S.stillLocked[kind] = [];
   S.showResults[kind] = false;
   announce(dryRun ? "Checking pots…" : "Filling pots…");
   render();
@@ -210,7 +244,7 @@ async function runFill(kind) {
       render();
     },
   });
-  run.results = results;
+  run.results = [...earlier, ...results];
   run.running = false;
   run.stopped = stoppedBy ? describeError(stoppedBy) : "";
   const head = resultsHeadline(run);
@@ -230,6 +264,7 @@ async function runFill(kind) {
         S.filledThisSession.pots += 1;
       }
     }
+    saveRecord();
     await load();
   }
 }
@@ -471,7 +506,7 @@ function paydayDone() {
   const jointLeft = S.groups.joint?.balance ?? 0;
   return h("section", { class: "card payday-done", "aria-label": "Payday done", tabindex: "-1" },
     h("span", { class: "tick" }, icon("check")),
-    h("h1", null, "Payday done"),
+    h("h2", null, "Payday done"),
     h("p", null, h("span", { class: "num positive" }, formatGBP(amount)), ` into ${pots} pot${pots === 1 ? "" : "s"}. `,
       off.length
         ? `Every pot you selected is at its goal. Still switched off: ${off.map((p) => p.name).join(", ")}.`
@@ -479,12 +514,27 @@ function paydayDone() {
     jointOff.length > 0 && jointLeft > 0 &&
       h("p", null, h("span", { class: "num" }, formatGBP(jointLeft)), ` is still in joint, ready for ${jointOff.map((p) => p.name).join(", ")} when you switch it back on.`),
     S.loadedAt > 0 && freshness(S.loadedAt),
+    !MOCK && h("button", { class: "btn-big", "data-key": "finish", onclick: finish }, "Sign out and finish"),
   );
+}
+
+/** Ends payday: revokes this app's Monzo access now and clears this tab's record. */
+async function finish() {
+  session.del(RUNS_KEY);
+  S.filledThisSession = { amount: 0, pots: 0 };
+  S.paydayShown = false;
+  await signOut();
 }
 
 function modeControl() {
   /** @param {boolean} dry */
-  const set = (dry) => { S.dryRun = dry; render(); };
+  const set = (dry) => {
+    S.dryRun = dry;
+    if (!dry) {
+      for (const k of /** @type {Kind[]} */ (["personal", "joint"])) if (S.runs[k]?.dryRun) S.runs[k] = null;
+    }
+    render(dry ? "mode-practice" : "mode-live");
+  };
   return h("section", { class: "mode", "aria-label": "Mode" },
     h("div", { class: "segmented", role: "group", "aria-label": "Practice or live" },
       h("button", { "aria-pressed": String(S.dryRun), "data-key": "mode-practice", disabled: busy(), onclick: () => set(true) }, "Practice"),
@@ -512,8 +562,38 @@ function stuckPots(run, toFill) {
 
 /** @param {Result} r */
 function fixFor(r) {
-  if (r.code && /locked/.test(r.code)) return "Unlock it in the Monzo app, then tap Refresh.";
-  return "Check it in the Monzo app, then try again.";
+  if (r.code && /locked/.test(r.code)) return "Unlock it in the Monzo app and try again, or leave it for this month.";
+  return "Check it in the Monzo app and try again, or leave it for this month.";
+}
+
+/**
+ * Refresh first; if every stuck pot is still locked, say so rather than offering
+ * a deposit that will be refused again.
+ * @param {Kind} kind @param {Result[]} stuck
+ */
+async function retryStuck(kind, stuck) {
+  S.retrying[kind] = true;
+  render(`fill-${kind}`);
+  await load();
+  S.retrying[kind] = false;
+  const pots = S.groups[kind]?.pots ?? [];
+  const still = stuck.filter((r) => pots.find((p) => p.id === r.potId)?.locked).map((r) => r.potId);
+  if (still.length === stuck.length) {
+    S.stillLocked[kind] = still;
+    announce("Still locked in Monzo.");
+    render(`fill-${kind}`);
+    return;
+  }
+  S.stillLocked[kind] = [];
+  runFill(kind);
+}
+
+/** @param {Kind} kind @param {Result[]} stuck */
+function leaveForNow(kind, stuck) {
+  for (const r of stuck) S.excluded.add(r.potId);
+  saveExcluded();
+  S.stillLocked[kind] = [];
+  render();
 }
 
 /**
@@ -544,11 +624,15 @@ function groupView(kind, group, plan) {
     ));
     const jointShort = kind === "personal" && S.groups.joint ? summarise(S.groups.joint.pots, S.excluded).total : 0;
     if (jointShort > 0) {
+      const toMove = Math.max(0, jointShort - (S.groups.joint?.balance ?? 0));
       body.push(h("button", {
         class: "btn-sm next-step",
         "data-key": "next-joint",
         onclick: () => document.getElementById("joint")?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      }, h("span", null, "Next: joint pots (", money(jointShort), ")"), icon("arrow", "icon icon-sm")));
+      }, toMove > 0
+        ? h("span", null, "Next: move ", money(toMove), " to joint")
+        : h("span", null, "Next: joint pots (", money(jointShort), ")"),
+      icon("arrow", "icon icon-sm")));
     }
   } else if (stuck.length) {
     body.push(
@@ -559,8 +643,16 @@ function groupView(kind, group, plan) {
       h("div", { class: "problem" },
         stuck.map((r) => h("div", { class: "problem-item" },
           h("h3", null, icon("alert", "icon icon-sm"), r.name),
-          h("p", null, r.message, ". ", fixFor(r)),
+          S.stillLocked[kind].includes(r.potId)
+            ? h("p", null, `Still locked in Monzo at ${new Date(S.loadedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}. Unlock it there and try again, or leave it for this month.`)
+            : h("p", null, r.message, ". ", fixFor(r)),
         )),
+        h("button", {
+          class: "btn-sm",
+          "data-key": `leave-${kind}`,
+          disabled: busy(),
+          onclick: () => leaveForNow(kind, stuck),
+        }, stuck.length === 1 ? `Leave ${stuck[0].name} for this month` : "Leave these for this month"),
       ),
     );
   } else {
@@ -584,6 +676,10 @@ function groupView(kind, group, plan) {
 
   const move = kind === "joint" && plan && total > 0 && !stuck.length ? moveCard(plan, group.balance, total) : null;
 
+  if (kind === "joint" && plan?.jointCovered && total > 0 && !stuck.length) {
+    body.push(h("p", { class: "note ok" }, icon("check"), h("span", null, "There's enough in joint for these pots.")));
+  }
+
   if (total > 0) {
     const label = S.dryRun ? "Practise filling" : "Fill";
     // A pot that needs changing in Monzo first gets a fresh read before the retry.
@@ -592,12 +688,11 @@ function groupView(kind, group, plan) {
       class: stuck.length ? "btn-big" : "btn-primary btn-big",
       "data-key": `fill-${kind}`,
       disabled: busy() || S.refreshing || (blocked && !S.dryRun),
-      onclick: async () => {
-        if (needsMonzo) await load();
-        runFill(kind);
-      },
+      onclick: () => (stuck.length && needsMonzo ? retryStuck(kind, stuck) : runFill(kind)),
     }, run?.running
       ? h("span", null, progressText(run))
+      : S.retrying[kind]
+        ? h("span", null, "Refreshing…")
       : stuck.length
         ? h("span", null, needsMonzo ? "Refresh and try again (" : "Try again (", money(total), ")")
         : h("span", null, `${label} ${kind} pots (`, money(total), ")")));
@@ -631,9 +726,9 @@ function moveCard(plan, jointBalance, jointTotal) {
         ") and this transfer. It's ", money(plan.personalShortBy), " short."));
 
   if (plan.jointCovered) {
-    return h("div", { class: "card notice" },
-      warning,
-      h("p", { class: "note ok" }, icon("check"), h("span", null, "There's enough in joint to fill these pots.")));
+    const locked = lockedNote(S.groups.joint);
+    if (!warning && !locked) return null;
+    return h("div", { class: "card notice" }, warning, locked);
   }
   return h("div", { class: "card notice" },
     h("h3", null, "Move ", h("span", { class: "owed" }, money(plan.moveToJoint)), " to joint first"),
@@ -653,9 +748,15 @@ function moveCard(plan, jointBalance, jointTotal) {
             announce("Amount copied");
             render();
             setTimeout(() => { S.copied = false; render(); }, 1500);
-          } catch { /* clipboard blocked */ }
+          } catch {
+            S.copyFailed = true;
+            announce("Couldn't copy the amount");
+            render();
+            setTimeout(() => { S.copyFailed = false; render(); }, 2500);
+          }
         },
-      }, icon(S.copied ? "check" : "copy", "icon icon-sm"), S.copied ? "Copied" : "Copy amount"),
+      }, icon(S.copied ? "check" : "copy", "icon icon-sm"),
+      S.copied ? "Copied" : S.copyFailed ? `Couldn't copy: ${plainAmount(plan.moveToJoint)}` : "Copy amount"),
       h("button", { class: "btn-sm", "data-key": "refresh-joint", disabled: S.refreshing || busy(), onclick: load },
         icon("refresh", "icon icon-sm"), S.refreshing ? "Refreshing…" : "Refresh"),
       mock && h("button", {
@@ -764,20 +865,23 @@ function resultsHeadline(run) {
   const pots = (/** @type {number} */ n) => `${n} pot${n === 1 ? "" : "s"}`;
   if (run.running) return { text: progressText(run), tone: "" };
   if (run.dryRun) {
-    const waiting = filled.filter((r) => r.message).length;
+    const locked = filled.filter((r) => r.code === "locked").length;
+    const waiting = filled.filter((r) => r.message && r.code !== "locked").length;
     return {
-      text: `Practice: would put ${formatGBP(sum)} into ${pots(filled.length)}${failed ? `, ${failed} couldn't` : ""}${waiting ? ", once the money is moved in" : ""}`,
+      text: `Practice: would put ${formatGBP(sum)} into ${pots(filled.length)}${waiting ? ", once the money is moved in" : ""}.`,
       tone: failed ? "bad" : "",
+      problem: locked ? `${locked} locked in Monzo may be refused.` : undefined,
     };
   }
+  const done = filled.length ? `Filled ${pots(filled.length)}, ${formatGBP(sum)}.` : "Nothing new went in.";
+  const left = run.results.filter((r) => r.outcome === "failed" && S.excluded.has(r.potId));
   if (failed || run.stopped) {
-    return {
-      text: `Filled ${pots(filled.length)}, ${formatGBP(sum)}.`,
-      tone: filled.length ? "ok" : "bad",
-      problem: failed ? `${failed} didn't go through.` : "Stopped early.",
-    };
+    return { text: done, tone: filled.length ? "ok" : "bad", problem: failed ? `${failed} didn't go through.` : "Stopped early." };
   }
-  return { text: `Filled ${pots(filled.length)}, ${formatGBP(sum)}`, tone: "ok" };
+  return {
+    text: left.length ? `${done} ${left.map((r) => r.name).join(", ")} left for this month.` : done,
+    tone: filled.length ? "ok" : "",
+  };
 }
 
 /** @param {Kind} kind @param {Run} run @param {boolean} failuresShownAbove */
@@ -806,7 +910,7 @@ function resultsView(kind, run, failuresShownAbove) {
         head.tone === "bad" && icon("alert", "icon icon-sm"),
         h("span", null, head.text, head.problem && [" ", h("span", { class: "head-problem" }, head.problem)]),
       ),
-      !run.running && h("button", {
+      !run.running && run.dryRun && h("button", {
         class: "btn-sm btn-quiet",
         "data-key": `clear-${kind}`,
         onclick: () => { S.runs[kind] = null; render(`fill-${kind}`); },
@@ -884,6 +988,21 @@ function confirmFill(kind, items, total, off) {
 // ---------------------------------------------------------------- boot
 
 setInterval(() => { if (S.screen === "main" && !busy() && !document.querySelector("dialog[open]")) render(); }, 30_000);
+
+if (!MOCK) {
+  const saved = loadRecord();
+  if (saved) {
+    S.filledThisSession = { amount: saved.amount, pots: saved.pots };
+    S.runs = { personal: saved.runs?.personal ?? null, joint: saved.runs?.joint ?? null };
+  }
+}
+
+// Coming back from the Monzo app (after the joint transfer): read fresh balances.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible" || S.screen !== "main" || busy() || S.refreshing) return;
+  if (document.querySelector("dialog[open]")) return;
+  if (Date.now() - S.loadedAt > 5_000) load();
+});
 
 if (MOCK) {
   document.getElementById("app")?.before(h("div", { class: "mock-banner" }, "Mock data · nothing is real"));

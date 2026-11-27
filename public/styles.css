@@ -44,6 +44,7 @@
 
   --accent: #4dd7c6; /* money in, progress, full */
   --debt: #f2a65a; /* what pots are still owed */
+  --debt-ink: var(--debt);
   --danger: #ff6b6b;
   --focus: color-mix(in srgb, var(--brand-fg) 70%, transparent);
 
@@ -83,6 +84,7 @@
   --brand-fg: #2f5e48;
   --accent: #00756a;
   --debt: #b85c0a;
+  --debt-ink: #9a4c06; /* amber for small text on an amber tint (chips): 4.8:1 */
   --danger: #d92d20;
   --card-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06);
   --overlay-shadow: 0 12px 32px rgb(16 24 40 / 0.16);
@@ -297,7 +299,8 @@ button:disabled {
   opacity: 0.85;
 }
 
-/* A primary action that can't be taken yet keeps a readable label. */
+/* A big action that can't be taken yet keeps a readable label. */
+.btn-big:disabled,
 .btn-primary:disabled {
   opacity: 1;
   background: var(--surface-2);
@@ -438,9 +441,6 @@ button:disabled {
   scroll-margin-top: 40px;
 }
 
-.group:first-of-type {
-  margin-top: 0;
-}
 
 .group-label {
   display: flex;
@@ -565,6 +565,10 @@ button:disabled {
   font-weight: var(--fw-strong);
   color: var(--danger);
   margin-bottom: 2px;
+}
+
+.problem .btn-sm {
+  justify-self: start;
 }
 
 .problem p {
@@ -862,8 +866,8 @@ button:disabled {
 
 /* light theme: a deeper amber so the small tag text clears 4.5:1 on its tint */
 :root[data-theme='light'] .chip-warn {
-  background: color-mix(in srgb, #9a4c06 16%, #ffffff);
-  color: #9a4c06;
+  background: color-mix(in srgb, var(--debt-ink) 16%, #ffffff);
+  color: var(--debt-ink);
 }
 
 .chip .icon {
