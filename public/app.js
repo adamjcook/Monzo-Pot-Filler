@@ -162,13 +162,13 @@ const S = {
   loadedAt: 0,
   /** Full pots are tucked away unless opened. @type {Record<Kind, boolean>} */
   showFull: { personal: false, joint: false },
-  /** Real deposits made this session, for the "Payday done" close. */
+  /** Real deposits made this session, for the "Bills paid" close. */
   filledThisSession: { amount: 0, pots: 0 },
   /** Successful result rows are folded behind "Show N". @type {Record<Kind, boolean>} */
   showResults: { personal: false, joint: false },
-  /** "Payday done" has been brought into view once. */
+  /** "Bills paid" has been brought into view once. */
   paydayShown: false,
-  /** The full-screen "Payday done" was closed with "Go back" (until something else goes in). */
+  /** The full-screen "Bills paid" was closed with "Go back" (until something else goes in). */
   paydayDismissed: false,
   copied: false,
   /** @type {"dark" | "light" | "system"} */
@@ -415,7 +415,7 @@ function render(anchorKey) {
     S.paydayShown = true;
     window.scrollTo({ top: 0, behavior: "auto" });
     /** @type {HTMLElement} */ (done).focus({ preventScroll: true });
-    announce(/** @type {HTMLElement} */ (done).innerText || "Payday done");
+    announce(/** @type {HTMLElement} */ (done).innerText || "Bills paid");
   }
 }
 
@@ -539,6 +539,11 @@ function freshness(at) {
   );
 }
 
+/** Opens the Monzo app from Chrome on Android (falls back to monzo.com if it isn't installed). */
+const MONZO_APP_URL = "intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;"
+  + "package=co.uk.getmondo;S.browser_fallback_url=https%3A%2F%2Fmonzo.com;end";
+const IS_ANDROID = /Android/i.test(navigator.userAgent);
+
 /** Every selected pot is full: the whole screen becomes the session's close. */
 function viewPaydayDone() {
   const { amount, pots } = S.filledThisSession;
@@ -547,10 +552,10 @@ function viewPaydayDone() {
   const jointLeft = S.groups.joint?.balance ?? 0;
   const back = () => { S.paydayDismissed = true; render(); window.scrollTo({ top: 0, behavior: "auto" }); };
   return [
-    h("section", { class: "payday-done payday-screen", "aria-label": "Payday done", tabindex: "-1" },
+    h("section", { class: "payday-done payday-screen", "aria-label": "Bills paid", tabindex: "-1" },
       h("div", { class: "payday-hero" },
         h("span", { class: "tick" }, icon("check")),
-        h("h1", null, "Payday done"),
+        h("h1", null, "Bills paid"),
         h("p", { class: "payday-amount num positive" }, formatGBP(amount)),
         h("p", null, `into ${pots} pot${pots === 1 ? "" : "s"}. `,
           off.length
@@ -561,6 +566,7 @@ function viewPaydayDone() {
       ),
       h("div", { class: "payday-actions" },
         h("button", { class: "btn-primary btn-big", "data-key": "finish", onclick: finish }, "Sign out"),
+        IS_ANDROID && h("a", { class: "btn btn-big", href: MONZO_APP_URL }, "Open the Monzo app"),
         h("button", { class: "btn-link", "data-key": "payday-back", onclick: back }, "Go back to my pots"),
       ),
     ),
@@ -572,9 +578,9 @@ function paydayDone() {
   const off = (["personal", "joint"]).flatMap((k) => { const g = S.groups[/** @type {Kind} */ (k)]; return g ? switchedOff(g) : []; });
   const jointOff = S.groups.joint ? switchedOff(S.groups.joint) : [];
   const jointLeft = S.groups.joint?.balance ?? 0;
-  return h("section", { class: "card payday-done", "aria-label": "Payday done", tabindex: "-1" },
+  return h("section", { class: "card payday-done", "aria-label": "Bills paid", tabindex: "-1" },
     h("span", { class: "tick" }, icon("check")),
-    h("h2", null, "Payday done"),
+    h("h2", null, "Bills paid"),
     h("p", null, h("span", { class: "num positive" }, formatGBP(amount)), ` into ${pots} pot${pots === 1 ? "" : "s"}. `,
       off.length
         ? `Every pot you selected is at its goal. Not filling: ${off.map((p) => p.name).join(", ")}.`
