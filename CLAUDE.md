@@ -10,3 +10,6 @@
 
 ## Checking UI changes
 - `?mock=1` runs the whole flow on made-up data (see README → Develop). Serving `public/` statically is enough for the mock flow.
+
+## Design
+- The Impeccable design plugin (`pbakaus/impeccable`) is enabled for this repo in `.claude/settings.json`. Use `/impeccable …` (e.g. `critique`, `audit`, `polish`) for UI work. Its project context lives in `PRODUCT.md`, `DESIGN.md` and `.impeccable/`.
