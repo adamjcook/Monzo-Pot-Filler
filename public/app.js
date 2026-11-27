@@ -40,6 +40,13 @@ const session = {
 const EXCLUDED_KEY = "pf.excluded.v1";
 const LIVE_FILL_DONE_KEY = "pf.liveFillDone";
 const THEME_KEY = "pf.theme";
+const systemLight = matchMedia("(prefers-color-scheme: light)");
+
+/** @returns {"dark" | "light" | "system"} */
+function themeChoice() {
+  const v = local.get(THEME_KEY);
+  return v === "light" || v === "system" ? v : "dark";
+}
 
 /** @returns {Set<string>} */
 function loadExcluded() {
@@ -102,7 +109,8 @@ const S = {
   /** "Payday done" has been brought into view once. */
   paydayShown: false,
   copied: false,
-  light: document.documentElement.getAttribute("data-theme") === "light",
+  /** @type {"dark" | "light" | "system"} */
+  theme: themeChoice(),
 };
 
 const busy = () => Boolean(S.runs.personal?.running || S.runs.joint?.running);
@@ -231,15 +239,24 @@ function switchedOff(group) {
   return summarise(group.pots, S.excluded).rows.filter((r) => r.excluded && r.shortfall > 0).map((r) => r.pot);
 }
 
-/** @param {boolean} light */
-function setTheme(light) {
-  S.light = light;
-  local.set(THEME_KEY, light ? "light" : "dark");
+/** @param {"dark" | "light" | "system"} choice */
+function setTheme(choice) {
+  S.theme = choice;
+  local.set(THEME_KEY, choice);
+  applyTheme();
+  render();
+}
+
+/** Shows the chosen theme; "system" resolves to the phone's own setting. */
+function applyTheme() {
+  const light = S.theme === "light" || (S.theme === "system" && systemLight.matches);
   if (light) document.documentElement.setAttribute("data-theme", "light");
   else document.documentElement.removeAttribute("data-theme");
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", light ? "#f0f4f2" : "#0b0e0c");
-  render();
 }
+
+// Follow the phone live (e.g. its automatic dark mode at sunset) while on "system".
+systemLight.addEventListener("change", () => { if (S.theme === "system") applyTheme(); });
 
 // ---------------------------------------------------------------- tiny DOM helper
 
@@ -349,11 +366,12 @@ function appearance() {
     h("div", { class: "group-label" }, h("span", null, "Appearance")),
     h("div", { class: "card appearance-card" },
       h("div", { class: "segmented" },
-        h("button", { "aria-pressed": String(!S.light), "data-key": "theme-dark", onclick: () => setTheme(false) }, "Dark"),
-        h("button", { "aria-pressed": String(S.light), "data-key": "theme-light", onclick: () => setTheme(true) }, "Light"),
+        h("button", { "aria-pressed": String(S.theme === "dark"), "data-key": "theme-dark", onclick: () => setTheme("dark") }, "Dark"),
+        h("button", { "aria-pressed": String(S.theme === "light"), "data-key": "theme-light", onclick: () => setTheme("light") }, "Light"),
+        h("button", { "aria-pressed": String(S.theme === "system"), "data-key": "theme-system", onclick: () => setTheme("system") }, "System"),
       ),
     ),
-    h("p", { class: "group-footer" }, "Just for this phone."),
+    h("p", { class: "group-footer" }, "System follows your phone's light or dark setting. Just for this phone."),
   );
 }
 

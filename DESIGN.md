@@ -209,11 +209,11 @@ Pot Filler does not have a world of its own. It is a sibling app in the MC Bank 
 
 The screen reads as one exact ledger. Each account's shortfall is the headline figure, the pots sit beneath it as a grouped list, and after a run the screen always says what happened in plain words with drawn icons. Density is comfortable, not sparse: rows are 64px tall in a single column no wider than 560px, built for one thumb on an Android phone.
 
-Dark is the default; light is an opt-in per phone (set by `data-theme="light"` on the root before first paint). Both themes are first-class and share every role; only the values move.
+Dark is the default; each phone can choose Light, or System to follow the phone's own setting live (resolved to `data-theme="light"` on the root before first paint). Both themes are first-class and share every role; only the values move.
 
 **Key Characteristics:**
 - Inherited from MC Bank: same palette roles, typeface, radii and list grammar.
-- Dark by default, light opt-in per phone; every role defined for both.
+- Dark by default; Light or System (follows the phone) per phone; every role defined for both.
 - Colour is semantic, never decorative: green acts, amber is owed, teal is in, red has failed.
 - Flat tonal layering in dark; a hairline ambient shadow in light.
 - One typeface, hierarchy by size and weight, tabular numerals on every money figure.
@@ -357,7 +357,7 @@ The family's dev/mock marker: a sticky full-width strip in mock yellow with dark
 
 ### Do:
 - **Do** take every palette, type and radius decision from MC Bank and keep Pot Filler in step with it.
-- **Do** define every colour role for both themes; dark is the default and light is opt-in per phone.
+- **Do** define every colour role for both themes; dark is the default, with Light or System as per-phone choices, as in MC Bank.
 - **Do** reserve icon green for actions, switches that are on, focus and the selected Live segment.
 - **Do** show money owed in amber, money in and full in teal, and failures in red, nothing else.
 - **Do** set every money figure in tabular numerals, with the account's shortfall as the largest figure (30px, 700).
