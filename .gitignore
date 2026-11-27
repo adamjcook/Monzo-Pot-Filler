@@ -6,3 +6,6 @@ node_modules/
 .impeccable/live/sessions/
 .impeccable/live/annotations/
 .impeccable/review/
+
+# Impeccable engine binary (downloaded per machine by the launcher)
+.claude/skills/impeccable/scripts/bin/
