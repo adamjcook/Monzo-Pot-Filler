@@ -861,15 +861,20 @@ button:disabled {
 
 /* Joint has just become fillable (back from the Monzo app): its button rings once. */
 .btn-primary.ready {
-  animation: ready 900ms cubic-bezier(0.16, 1, 0.3, 1) 350ms;
+  animation: ready 1400ms ease-out 300ms backwards;
 }
 
+/* the ring opens to a few pixels, holds so the eye catches it, then lets go */
 @keyframes ready {
-  from {
+  0% {
     box-shadow: 0 0 0 0 var(--focus);
   }
-  to {
-    box-shadow: 0 0 0 12px transparent;
+  20%,
+  45% {
+    box-shadow: 0 0 0 4px var(--focus);
+  }
+  100% {
+    box-shadow: 0 0 0 4px transparent;
   }
 }
 
@@ -1521,12 +1526,16 @@ dialog[open] {
   }
 
   .btn-primary.ready {
-    animation: ready-still 1200ms ease-out 200ms backwards !important;
+    animation: ready-still 1500ms ease-out backwards !important;
   }
 
   @keyframes ready-still {
-    from {
+    0%,
+    40% {
       box-shadow: 0 0 0 3px var(--focus);
+    }
+    100% {
+      box-shadow: 0 0 0 3px transparent;
     }
   }
 
