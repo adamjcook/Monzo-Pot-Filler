@@ -49,9 +49,9 @@
           "#d2fae4"
         ]
       },
-      "owed-amber": {
+      "short-amber": {
         "role": "secondary",
-        "displayName": "Owed Amber",
+        "displayName": "Short Amber",
         "canonical": "oklch(78.5% 0.129 64)",
         "tonalRamp": [
           "#1e0200",
@@ -64,9 +64,9 @@
           "#ffe5bc"
         ]
       },
-      "owed-amber-light": {
+      "short-amber-light": {
         "role": "secondary",
-        "displayName": "Owed Amber (light theme)",
+        "displayName": "Short Amber (light theme)",
         "canonical": "oklch(57.5% 0.143 53)",
         "tonalRamp": [
           "#220000",
@@ -432,7 +432,7 @@
       "lightMapping": {
         "icon-green": "icon-green-light",
         "green-ink": "icon-green-light",
-        "owed-amber": "owed-amber-light",
+        "short-amber": "short-amber-light",
         "filled-teal": "filled-teal-light",
         "danger-red": "danger-red-light",
         "graphite": "pale-sage",
@@ -583,11 +583,11 @@
   ],
   "narrative": {
     "northStar": "The Calm Payday Ledger",
-    "overview": "Pot Filler does not have a world of its own. It is a sibling app in the MC Bank family and inherits MC Bank's visual world wholesale: graphite surfaces with a faint lean towards the icon's green, Figtree Variable throughout, a deep icon-green that owns every action, amber for money still owed, teal for money in and \"full\", and grouped lists under small grey labels with totals on the right. The source of that world is MC Bank (the FinPair project's `src/style.css`); this file records how it landed in Pot Filler's own build. **Keep it in step with MC Bank.** When the family's look changes, change it there first and follow it here; never let the two drift into separate identities.\n\nThe screen reads as one exact ledger. Each account's shortfall is the headline figure, the pots sit beneath it as a grouped list, and after a run the screen always says what happened in plain words with drawn icons. Density is comfortable, not sparse: rows are 64px tall in a single column no wider than 560px, built for one thumb on an Android phone.\n\nDark is the default; light is an opt-in per phone (set by `data-theme=\"light\"` on the root before first paint). Both themes are first-class and share every role; only the values move.",
+    "overview": "Pot Filler does not have a world of its own. It is a sibling app in the MC Bank family and inherits MC Bank's visual world wholesale: graphite surfaces with a faint lean towards the icon's green, Figtree Variable throughout, a deep icon-green that owns every action, amber only for a real shortfall or something to act on, teal for money in and \"full\", and grouped lists under small grey labels with totals on the right. The source of that world is MC Bank (the FinPair project's `src/style.css`); this file records how it landed in Pot Filler's own build. **Keep it in step with MC Bank.** When the family's look changes, change it there first and follow it here; never let the two drift into separate identities.\n\nThe screen reads as one exact ledger. Each account's shortfall is the headline figure, the pots sit beneath it as a grouped list, and after a run the screen always says what happened in plain words with drawn icons. Density is comfortable, not sparse: rows are 64px tall in a single column no wider than 560px, built for one thumb on an Android phone.\n\nDark is the default; each phone can choose Light, or System to follow the phone's own setting live (resolved to `data-theme=\"light\"` on the root before first paint). Both themes are first-class and share every role; only the values move.",
     "keyCharacteristics": [
       "Inherited from MC Bank: same palette roles, typeface, radii and list grammar.",
       "Dark by default, light opt-in per phone; every role defined for both.",
-      "Colour is semantic, never decorative: green acts, amber is owed, teal is in, red has failed.",
+      "Colour is semantic, never decorative: green acts, amber means \"not enough\" or \"act on this\", teal is in, red has failed. Ordinary amounts are plain text.",
       "Flat tonal layering in dark; a hairline ambient shadow in light.",
       "One typeface, hierarchy by size and weight, tabular numerals on every money figure.",
       "Drawn stroke icons on a 24px grid, one family throughout."
@@ -600,7 +600,7 @@
       },
       {
         "name": "The One Meaning Per Hue Rule",
-        "body": "Amber is only money still owed, teal is only money in or full, red is only failure. A pot that is owed reads amber; the same pot once filled reads teal. Never swap them for visual variety.",
+        "body": "Amber is only \"not enough money\" or \"act on this\", teal is only money in or full, red is only failure. A pot that still needs money is plain text, not amber; once filled it reads teal. Never use amber for ordinary amounts, and never swap hues for visual variety.",
         "section": "colors"
       },
       {
@@ -615,7 +615,7 @@
       },
       {
         "name": "The Shortfall Is The Headline Rule",
-        "body": "On the main screen the largest type is the account's amount owed (headline, amber). Nothing else in the account section is set larger.",
+        "body": "On the main screen the largest type is the account's amount to fill (headline, plain text; amber only when the account can't cover it). Nothing else in the account section is set larger.",
         "section": "typography"
       },
       {
@@ -638,7 +638,7 @@
       "**Do** take every palette, type and radius decision from MC Bank and keep Pot Filler in step with it.",
       "**Do** define every colour role for both themes; dark is the default and light is opt-in per phone.",
       "**Do** reserve icon green for actions, switches that are on, focus and the selected Live segment.",
-      "**Do** show money owed in amber, money in and full in teal, and failures in red, nothing else.",
+      "**Do** keep ordinary amounts in plain text; amber only for \"not enough\" or something to act on, teal for money in and full, red for failures.",
       "**Do** set every money figure in tabular numerals, with the account's shortfall as the largest figure (30px, 700).",
       "**Do** use the drawn 24px, 2px-stroke icon family for every icon.",
       "**Do** separate surfaces by graphite step in dark and by a hairline ambient shadow in light.",

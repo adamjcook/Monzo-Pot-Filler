@@ -102,7 +102,7 @@ function loadSession() {
 
 const params = new URLSearchParams(location.search);
 const MOCK = params.has("mock") && params.get("mock") !== "0";
-const mock = MOCK ? mockApi() : null;
+const mock = MOCK ? mockApi({ short: params.get("mock") === "short" }) : null;
 const api = mock ?? liveApi(() => loadSession()?.token ?? null);
 
 const S = {
@@ -481,7 +481,7 @@ function viewMain() {
     header(),
     allFull && S.filledThisSession.pots > 0 ? paydayDone() : modeControl(),
     S.error && h("p", { class: "card note bad", style: { marginBottom: "18px" } }, icon("alert"), h("span", null, S.error)),
-    p ? groupView("personal", p) : h("p", { class: "card muted" }, "No personal account found."),
+    p ? groupView("personal", p, plan) : h("p", { class: "card muted" }, "No personal account found."),
     j ? groupView("joint", j, plan) : h("p", { class: "card muted", style: { marginTop: "30px" } }, "No joint account found."),
     appearance(),
   ];
@@ -656,10 +656,13 @@ function groupView(kind, group, plan) {
       ),
     );
   } else {
+    // Amber is for a real shortfall only: this account can't cover what it has to pay for.
+    const shortBy = kind === "personal" && plan ? plan.personalShortBy : 0;
     body.push(h("div", null,
-      h("div", { class: "big-number owed" }, formatGBP(total)),
+      h("div", { class: `big-number${shortBy > 0 ? " owed" : ""}` }, formatGBP(total)),
       h("div", { class: "figure-caption" }, `to fill across ${toFill.length} pot${toFill.length === 1 ? "" : "s"}`),
     ));
+    if (shortBy > 0 && plan) body.push(shortNote(group.balance, total, plan));
   }
 
   if (off.length) {
@@ -717,13 +720,9 @@ function groupView(kind, group, plan) {
  * @param {number} jointTotal
  */
 function moveCard(plan, jointBalance, jointTotal) {
-  const personalBalance = S.groups.personal?.balance ?? 0;
-  const personalTotal = S.groups.personal ? summarise(S.groups.personal.pots, S.excluded).total : 0;
   const warning = plan.personalShortBy > 0 &&
     h("p", { class: "note warn" }, icon("alert"),
-      h("span", null,
-        "Your account has ", money(personalBalance), ", which isn't enough for your pots (", money(personalTotal),
-        ") and this transfer. It's ", money(plan.personalShortBy), " short."));
+      h("span", null, "Your account can't cover this transfer as well as your own pots: it's ", money(plan.personalShortBy), " short."));
 
   if (plan.jointCovered) {
     const locked = lockedNote(S.groups.joint);
@@ -731,7 +730,7 @@ function moveCard(plan, jointBalance, jointTotal) {
     return h("div", { class: "card notice" }, warning, locked);
   }
   return h("div", { class: "card notice" },
-    h("h3", null, "Move ", h("span", { class: "owed" }, money(plan.moveToJoint)), " to joint first"),
+    h("h3", null, "Move ", h("span", { class: plan.personalShortBy > 0 ? "owed" : "" }, money(plan.moveToJoint)), " to joint first"),
     h("p", null,
       "Joint has ", h("b", null, money(jointBalance)), " and its pots need ", h("b", null, money(jointTotal)),
       ". Transfer the difference from your account to joint in the Monzo app, then tap Refresh."),
@@ -796,6 +795,21 @@ function potList(kind, title, rows) {
   );
 }
 
+/**
+ * The one truly negative state: the personal account can't cover its own pots
+ * plus the money joint needs.
+ * @param {number} balance @param {number} total @param {ReturnType<typeof jointPlan>} plan
+ */
+function shortNote(balance, total, plan) {
+  return h("p", { class: "note warn" }, icon("alert"),
+    h("span", null,
+      "Not enough to fill everything: you're ", money(plan.personalShortBy), " short. ",
+      "Your account has ", money(balance), plan.moveToJoint > 0
+        ? [", and needs ", money(total), " for these pots plus ", money(plan.moveToJoint), " for joint."]
+        : [" and these pots need ", money(total), "."],
+      " Switch some pots off, or fill what you can now."));
+}
+
 /** Selected, short pots that Monzo shows as locked. @param {Group | null} group */
 function lockedShort(group) {
   return group ? summarise(group.pots, S.excluded).toFill.filter((r) => r.pot.locked) : [];
@@ -827,7 +841,7 @@ function potRow({ pot, shortfall, excluded }) {
     ),
     full
       ? h("div", { class: "pot-amount full" }, icon("check", "icon icon-sm"), "Full")
-      : h("div", { class: `pot-amount num${excluded ? "" : " owed"}` },
+      : h("div", { class: "pot-amount num" },
           formatGBP(shortfall), h("small", null, excluded ? "off" : "to go")),
     full ? h("span", { "aria-hidden": "true" }) : h("button", {
       class: "switch",

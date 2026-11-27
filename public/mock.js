@@ -16,13 +16,14 @@ const pot = (id, name, balance, goal, extra = {}) => ({
   ...extra,
 });
 
-function seed() {
+/** @param {number} personalBalance */
+function seed(personalBalance) {
   return {
     accounts: {
       uk_retail: [{ id: "acc_mock_personal", description: "Personal", type: "uk_retail", closed: false }],
       uk_retail_joint: [{ id: "acc_mock_joint", description: "Joint", type: "uk_retail_joint", closed: false }],
     },
-    balances: /** @type {Record<string, number>} */ ({ acc_mock_personal: 245_000, acc_mock_joint: 12_550 }),
+    balances: /** @type {Record<string, number>} */ ({ acc_mock_personal: personalBalance, acc_mock_joint: 12_550 }),
     pots: /** @type {Record<string, Pot[]>} */ ({
       acc_mock_personal: [
         pot("phone", "Phone contract", 0, 2_400),
@@ -55,10 +56,11 @@ function seed() {
 }
 
 /**
+ * @param {{ short?: boolean }} [opts] short: the personal account can't cover its pots and the joint transfer
  * @returns {Api & { simulateTransferToJoint(amount: number): void }}
  */
-export function mockApi() {
-  const db = seed();
+export function mockApi(opts = {}) {
+  const db = seed(opts.short ? 150_000 : 245_000);
   /** @type {Map<string, Pot>} */
   const seen = new Map(); // dedupe_id -> resulting pot, like Monzo's de-duplication
   const wait = () => new Promise((r) => setTimeout(r, 120 + Math.random() * 120));

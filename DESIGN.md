@@ -6,9 +6,9 @@ colors:
   icon-green-light: "#2f5e48"
   green-ink: "#68b08d"
   on-green: "#ffffff"
-  owed-amber: "#f2a65a"
-  owed-amber-light: "#b85c0a"
-  owed-amber-ink-light: "#9a4c06"
+  short-amber: "#f2a65a"
+  short-amber-light: "#b85c0a"
+  short-amber-ink-light: "#9a4c06"
   filled-teal: "#4dd7c6"
   filled-teal-light: "#00756a"
   danger-red: "#ff6b6b"
@@ -181,7 +181,7 @@ components:
     padding: "2px 7px"
   chip-warn:
     backgroundColor: "color-mix(in srgb, #f2a65a 16%, transparent)"
-    textColor: "{colors.owed-amber}"
+    textColor: "{colors.short-amber}"
     typography: "{typography.micro}"
     rounded: "{rounded.chip}"
     padding: "2px 7px"
@@ -213,7 +213,7 @@ components:
 
 **Creative North Star: "The Calm Payday Ledger"**
 
-Pot Filler does not have a world of its own. It is a sibling app in the MC Bank family and inherits MC Bank's visual world wholesale: graphite surfaces with a faint lean towards the icon's green, Figtree Variable throughout, a deep icon-green that owns every action, amber for money still owed, teal for money in and "full", and grouped lists under small grey labels with totals on the right. The source of that world is MC Bank (the FinPair project's `src/style.css`); this file records how it landed in Pot Filler's own build. **Keep it in step with MC Bank.** When the family's look changes, change it there first and follow it here; never let the two drift into separate identities.
+Pot Filler does not have a world of its own. It is a sibling app in the MC Bank family and inherits MC Bank's visual world wholesale: graphite surfaces with a faint lean towards the icon's green, Figtree Variable throughout, a deep icon-green that owns every action, amber only for a real shortfall or something to act on, teal for money in and "full", and grouped lists under small grey labels with totals on the right. The source of that world is MC Bank (the FinPair project's `src/style.css`); this file records how it landed in Pot Filler's own build. **Keep it in step with MC Bank.** When the family's look changes, change it there first and follow it here; never let the two drift into separate identities.
 
 The screen reads as one exact ledger. Each account's shortfall is the headline figure, the pots sit beneath it as a grouped list, and after a run the screen always says what happened in plain words with drawn icons. Density is comfortable, not sparse: rows are 64px tall in a single column no wider than 560px, built for one thumb on an Android phone.
 
@@ -222,7 +222,7 @@ Dark is the default; each phone can choose Light, or System to follow the phone'
 **Key Characteristics:**
 - Inherited from MC Bank: same palette roles, typeface, radii and list grammar.
 - Dark by default; Light or System (follows the phone) per phone; every role defined for both.
-- Colour is semantic, never decorative: green acts, amber is owed, teal is in, red has failed.
+- Colour is semantic, never decorative: green acts, amber means "not enough" or "act on this", teal is in, red has failed. Ordinary amounts are plain text.
 - Flat tonal layering in dark; a hairline ambient shadow in light.
 - One typeface, hierarchy by size and weight, tabular numerals on every money figure.
 - Drawn stroke icons on a 24px grid, one family throughout.
@@ -236,7 +236,7 @@ A graphite (or pale sage) ground with four semantic hues, each owning exactly on
 - **Green Ink** (`green-ink`; in light theme it collapses to `icon-green-light`): the readable, lighter green for green *text and lines* on dark: text links, the Live note's shield icon, the "would fill" result icon, the numbered approval steps, the focus ring (at 70% via colour-mix), text selection (32%) and the caret.
 
 ### Secondary
-- **Owed Amber** (`owed-amber`, light `owed-amber-light`): what pots are still owed. The account's big shortfall figure, each pot's "to go" amount, the "Move £Y to joint first" sum, warning notes, and the Locked chip (amber text on a 16% amber tint).
+- **Short Amber** (`short-amber`, light `short-amber-light`): a real problem only. The account's figure and the "Move £Y to joint first" sum turn amber when the personal account can't cover its pots plus the joint transfer; also the amount that couldn't be added after a failure, warning notes, stale balances, and the Locked chip (amber text on a 16% amber tint). Amounts pots need on a normal payday are plain primary text: they are the plan, not a debt.
 
 ### Tertiary
 - **Filled Teal** (`filled-teal`, light `filled-teal-light`): money in, progress and full. Pot progress bars, the "Full" mark, filled results and their amounts, the "all pots full" tick on a 16% teal tint, success notes.
@@ -254,7 +254,7 @@ A graphite (or pale sage) ground with four semantic hues, each owning exactly on
 ### Named Rules
 **The Green Means Go Rule.** Icon green marks what you can act on and where real money moves: primary buttons, switches that are on, the selected Live segment, focus. It never decorates, and Practice never wears it (Practice selects in neutral graphite, as MC Bank's segments do).
 
-**The One Meaning Per Hue Rule.** Amber is only money still owed, teal is only money in or full, red is only failure. A pot that is owed reads amber; the same pot once filled reads teal. Never swap them for visual variety.
+**The One Meaning Per Hue Rule.** Amber is only "not enough money" or "act on this", teal is only money in or full, red is only failure. A pot that still needs money is plain text, not amber; once filled it reads teal. Never use amber for ordinary amounts, and never swap hues for visual variety.
 
 **The In Step With MC Bank Rule.** These values are MC Bank's. A palette change starts in the family's source and is copied here, never invented here.
 
@@ -279,7 +279,7 @@ A graphite (or pale sage) ground with four semantic hues, each owning exactly on
 ### Named Rules
 **The Tabular Money Rule.** Every money figure uses tabular numerals so amounts align down the list and don't jitter while a run updates them.
 
-**The Shortfall Is The Headline Rule.** On the main screen the largest type is the account's amount owed (headline, amber). Nothing else in the account section is set larger.
+**The Shortfall Is The Headline Rule.** On the main screen the largest type is the account's amount to fill (headline, plain text; amber only when the account can't cover it). Nothing else in the account section is set larger.
 
 ## Layout
 
@@ -328,16 +328,16 @@ A raised graphite track (3px inset, 12px) holding two 40px segments. Practice se
 Small grey label (13px, 550) on the left, the account's available balance or total on the right, 4px inset to align with card content. A `group-footer` line in faint 13px text may follow the card.
 
 ### Summary card (with big number)
-The account's card: the amber shortfall in headline type, a grey caption ("to fill across 7 pots"), any switched-off line ("1 pot switched off: Gym." with a "Turn it back on" link), then the full-width primary button. When nothing is owed it becomes the "all pots full" line: a teal tick in a 32px tinted circle and a warm 17px sentence.
+The account's card: the amount to fill in headline type (plain; amber with a warning note when the money isn't there), a grey caption ("to fill across 7 pots"), any switched-off line ("1 pot switched off: Gym." with a "Turn it back on" link), then the full-width primary button. When nothing is owed it becomes the "all pots full" line: a teal tick in a 32px tinted circle and a warm 17px sentence.
 
 ### Notice card
-MC Bank's alert-card form for the joint transfer: a card with a title-size heading carrying the amber sum ("Move £Y to joint first"), a grey 14px explanation, and a row of small raised-graphite pill buttons with 16px icons (Copy amount, Refresh).
+MC Bank's alert-card form for the joint transfer: a card with a title-size heading carrying the sum ("Move £Y to joint first", amber only when the personal account can't cover it), a grey 14px explanation, and a row of small raised-graphite pill buttons with 16px icons (Copy amount, Refresh).
 
 ### Problem section
 Not a box: a hairline-topped section inside the summary card. Red title-size heading with the drawn alert icon, the pot name, a plain-English 14px fix, then the secondary button for the next step.
 
 ### Pot list row
-A 64px row in a 20px-radius list: name (550) with an optional chip, a grey "£X of £Y" subtitle, a 4px teal progress bar; the right-aligned amount column shows the amber "to go" figure with a grey caption, or a teal check and "Full"; then the switch. A switched-off row turns name, subtitle, amount and bar to faint text.
+A 64px row in a 20px-radius list: name (550) with an optional chip, a grey "£X of £Y" subtitle, a 4px teal progress bar; the right-aligned amount column shows the "to go" figure in plain text with a grey caption, or a teal check and "Full"; then the switch. A switched-off row turns name, subtitle, amount and bar to faint text.
 
 ### Chips
 - **Chip:** 11px 600 text on raised graphite, 6px radius, 2px 7px padding, optional 11px icon.
@@ -367,7 +367,7 @@ The family's dev/mock marker: a sticky full-width strip in mock yellow with dark
 - **Do** take every palette, type and radius decision from MC Bank and keep Pot Filler in step with it.
 - **Do** define every colour role for both themes; dark is the default, with Light or System as per-phone choices, as in MC Bank.
 - **Do** reserve icon green for actions, switches that are on, focus and the selected Live segment.
-- **Do** show money owed in amber, money in and full in teal, and failures in red, nothing else.
+- **Do** keep ordinary amounts in plain text; amber only for "not enough" or something to act on, teal for money in and full, red for failures.
 - **Do** set every money figure in tabular numerals, with the account's shortfall as the largest figure (30px, 700).
 - **Do** use the drawn 24px, 2px-stroke icon family for every icon.
 - **Do** separate surfaces by graphite step in dark and by a hairline ambient shadow in light.
