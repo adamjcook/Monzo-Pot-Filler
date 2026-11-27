@@ -671,6 +671,67 @@ button:disabled {
   padding: 4px 0 0;
 }
 
+/* The full-screen close: a pat on the back up top, the way out under the thumb. */
+.payday-screen {
+  min-height: calc(100dvh - 46px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  grid-template-rows: 1fr auto;
+  justify-items: stretch;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+}
+
+.payday-hero {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.payday-screen .tick {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 10px;
+}
+
+.payday-screen .tick .icon {
+  width: 38px;
+  height: 38px;
+}
+
+.payday-screen h1 {
+  font-size: var(--fs-display);
+  line-height: 1.05;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.035em;
+}
+
+.payday-screen .payday-amount {
+  font-size: var(--fs-display);
+  line-height: 1.05;
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  margin-top: 6px;
+}
+
+.payday-screen p {
+  max-width: 34ch;
+}
+
+.payday-actions {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.payday-actions .btn-link {
+  font-size: var(--fs-subhead);
+  color: var(--text-2);
+}
+
 @keyframes done-pop {
   from {
     transform: scale(0.6);

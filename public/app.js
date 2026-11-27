@@ -168,6 +168,8 @@ const S = {
   showResults: { personal: false, joint: false },
   /** "Payday done" has been brought into view once. */
   paydayShown: false,
+  /** The full-screen "Payday done" was closed with "Go back" (until something else goes in). */
+  paydayDismissed: false,
   copied: false,
   /** @type {"dark" | "light" | "system"} */
   theme: themeChoice(),
@@ -298,6 +300,7 @@ async function runFill(kind) {
       if (r.outcome === "filled") {
         S.filledThisSession.amount += r.amount;
         S.filledThisSession.pots += 1;
+        S.paydayDismissed = false;
       }
     }
     saveRecord();
@@ -396,6 +399,7 @@ function render(anchorKey) {
     : S.screen === "approve" ? viewApprove()
     : S.screen === "error" ? viewError()
     : S.screen === "loading" ? viewLoading()
+    : paydayActive() && !S.paydayDismissed ? viewPaydayDone()
     : viewMain();
   root.replaceChildren(...view.flat(Infinity).filter(Boolean));
   const after = key ? /** @type {HTMLElement | null} */ (root.querySelector(`[data-key="${CSS.escape(key)}"]`)) : null;
@@ -409,7 +413,7 @@ function render(anchorKey) {
   const done = root.querySelector(".payday-done");
   if (done && !S.paydayShown) {
     S.paydayShown = true;
-    window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    window.scrollTo({ top: 0, behavior: "auto" });
     /** @type {HTMLElement} */ (done).focus({ preventScroll: true });
     announce(/** @type {HTMLElement} */ (done).innerText || "Payday done");
   }
@@ -535,6 +539,34 @@ function freshness(at) {
   );
 }
 
+/** Every selected pot is full: the whole screen becomes the session's close. */
+function viewPaydayDone() {
+  const { amount, pots } = S.filledThisSession;
+  const off = (["personal", "joint"]).flatMap((k) => { const g = S.groups[/** @type {Kind} */ (k)]; return g ? switchedOff(g) : []; });
+  const jointOff = S.groups.joint ? switchedOff(S.groups.joint) : [];
+  const jointLeft = S.groups.joint?.balance ?? 0;
+  const back = () => { S.paydayDismissed = true; render(); window.scrollTo({ top: 0, behavior: "auto" }); };
+  return [
+    h("section", { class: "payday-done payday-screen", "aria-label": "Payday done", tabindex: "-1" },
+      h("div", { class: "payday-hero" },
+        h("span", { class: "tick" }, icon("check")),
+        h("h1", null, "Payday done"),
+        h("p", { class: "payday-amount num positive" }, formatGBP(amount)),
+        h("p", null, `into ${pots} pot${pots === 1 ? "" : "s"}. `,
+          off.length
+            ? `Every pot you selected is at its goal. Not filling: ${off.map((p) => p.name).join(", ")}.`
+            : "Every bill pot is at its goal, so the bills are covered for the month. Nicely done."),
+        jointOff.length > 0 && jointLeft > 0 &&
+          h("p", null, h("span", { class: "num" }, formatGBP(jointLeft)), ` is still in joint for ${jointOff.map((p) => p.name).join(", ")}.`),
+      ),
+      h("div", { class: "payday-actions" },
+        h("button", { class: "btn-primary btn-big", "data-key": "finish", onclick: finish }, "Sign out"),
+        h("button", { class: "btn-link", "data-key": "payday-back", onclick: back }, "Go back to my pots"),
+      ),
+    ),
+  ];
+}
+
 function paydayDone() {
   const { amount, pots } = S.filledThisSession;
   const off = (["personal", "joint"]).flatMap((k) => { const g = S.groups[/** @type {Kind} */ (k)]; return g ? switchedOff(g) : []; });
@@ -565,6 +597,7 @@ async function finish() {
   session.del(RUNS_KEY);
   S.filledThisSession = { amount: 0, pots: 0 };
   S.paydayShown = false;
+  S.paydayDismissed = false;
   await signOut();
 }
 
