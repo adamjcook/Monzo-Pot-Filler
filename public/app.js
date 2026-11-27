@@ -20,7 +20,7 @@ import { mockApi } from "./mock.js";
 /** @typedef {import("./logic.js").Result} Result */
 /** @typedef {"personal" | "joint"} Kind */
 /** @typedef {{ account: Account, balance: number, pots: Pot[] }} Group */
-/** @typedef {{ results: Result[], dryRun: boolean, running: boolean, stopped: string }} Run */
+/** @typedef {{ results: Result[], dryRun: boolean, running: boolean, stopped: string, pending?: number }} Run */
 
 // ---------------------------------------------------------------- storage (all optional)
 
@@ -205,6 +205,8 @@ async function load() {
     const joint = await loadGroup("joint");
     S.groups = { personal, joint };
     S.loadedAt = Date.now();
+    // Fresh balances now include what went in, so the figures stop subtracting it themselves.
+    for (const k of /** @type {Kind[]} */ (["personal", "joint"])) { const r = S.runs[k]; if (r) r.pending = 0; }
     for (const k of /** @type {Kind[]} */ (["personal", "joint"])) {
       if (S.runs[k]?.dryRun && !S.runs[k]?.running) S.runs[k] = null;
     }
@@ -279,6 +281,7 @@ async function runFill(kind) {
     dryRun,
     onProgress(partial) {
       run.results = partial;
+      run.pending = dryRun ? 0 : partial.reduce((n, r) => n + (r.outcome === "filled" ? r.amount : 0), 0);
       render();
     },
   });
@@ -361,7 +364,7 @@ const money = (/** @type {number} */ p) => h("span", { class: "num" }, formatGBP
 // Drawn stroke icons (24px grid, 2px stroke, round caps), one family throughout.
 const ICONS = {
   refresh: '<path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 20v-4h-4"/>',
-  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1"/>',
   alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.5v.01"/>',
   arrow: '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
   dash: '<path d="M7 12h10"/>',
@@ -379,6 +382,84 @@ function icon(name, cls = "icon") {
   span.innerHTML = `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
   return /** @type {Element} */ (span.firstElementChild);
 }
+
+// ---------------------------------------------------------------- motion
+
+const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** @type {Map<string, unknown>} */
+const seen = new Map();
+/**
+ * True when a value differs from what the last render saw under this key
+ * (never on first sight), so motion marks real changes, not every rebuild.
+ * @param {string} key @param {unknown} value
+ */
+function changed(key, value) {
+  const had = seen.has(key);
+  const was = seen.get(key);
+  seen.set(key, value);
+  return had && was !== value;
+}
+
+/** @type {Map<string, { shown: number, from: number, target: number, t0: number, dur: number }>} */
+const counters = new Map();
+let countFrame = 0;
+
+/**
+ * A money figure that counts to its new value instead of jumping. The tween lives here,
+ * not in the element, so it carries on across re-renders.
+ * @param {string} key @param {number} value
+ * @param {{ from?: number, dur?: number, delay?: number }} [opt]
+ */
+function countSpan(key, value, opt = {}) {
+  let c = counters.get(key);
+  if (!c) {
+    const start = opt.from ?? value;
+    c = { shown: start, from: start, target: start, t0: 0, dur: 0 };
+    counters.set(key, c);
+  }
+  if (c.target !== value) {
+    if (reduceMotion()) c.shown = c.from = c.target = value;
+    else {
+      Object.assign(c, { from: c.shown, target: value, t0: performance.now() + (opt.delay ?? 0), dur: opt.dur ?? 450 });
+      if (!countFrame) countFrame = requestAnimationFrame(tickCounts);
+    }
+  }
+  return h("span", { "data-count": key }, formatGBP(c.shown));
+}
+
+/** @param {number} now */
+function tickCounts(now) {
+  countFrame = 0;
+  let more = false;
+  for (const [key, c] of counters) {
+    if (c.shown === c.target) continue;
+    const t = Math.min(1, Math.max(0, (now - c.t0) / c.dur));
+    const eased = 1 - Math.pow(1 - t, 3);
+    c.shown = t >= 1 ? c.target : Math.round(c.from + (c.target - c.from) * eased);
+    for (const el of document.querySelectorAll(`[data-count="${key}"]`)) el.textContent = formatGBP(c.shown);
+    if (c.shown !== c.target) more = true;
+  }
+  if (more) countFrame = requestAnimationFrame(tickCounts);
+}
+
+/**
+ * Scroll to an account and briefly ring its first card, so the eye lands on the next job.
+ * @param {Kind} kind @param {boolean} [ring] false when something inside already marks the spot
+ */
+function goTo(kind, ring = true) {
+  const section = document.getElementById(kind);
+  if (!section) return;
+  section.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
+  const card = ring && section.querySelector(".card");
+  if (!card) return;
+  card.classList.remove("land");
+  void (/** @type {HTMLElement} */ (card)).offsetWidth;
+  card.classList.add("land");
+}
+
+/** Set by a view when joint has just become fillable; render then brings it into view. */
+let jointJustReady = false;
 
 // ---------------------------------------------------------------- views
 
@@ -415,7 +496,16 @@ function render(anchorKey) {
     S.paydayShown = true;
     window.scrollTo({ top: 0, behavior: "auto" });
     /** @type {HTMLElement} */ (done).focus({ preventScroll: true });
-    announce(/** @type {HTMLElement} */ (done).innerText || "Bills paid");
+    // Said from plain text: the on-screen total is mid-count at this point.
+    announce(/** @type {HTMLElement} */ (done).dataset.say || "Bills paid");
+    // A small double tap in the hand as the tick lands (Android Chrome; ignored elsewhere).
+    if (done.classList.contains("payday-screen") && !reduceMotion()) setTimeout(() => navigator.vibrate?.([14, 70, 26]), 860);
+  }
+
+  // Back from the Monzo app with the transfer in: joint's fill is the next job.
+  if (jointJustReady) {
+    jointJustReady = false;
+    goTo("joint", false); // the fill button's own ring marks it
   }
 }
 
@@ -556,11 +646,14 @@ function viewPaydayDone() {
   const jointLeft = S.groups.joint?.balance ?? 0;
   const back = () => { S.paydayDismissed = true; render(); window.scrollTo({ top: 0, behavior: "auto" }); };
   return [
-    h("section", { class: "payday-done payday-screen", "aria-label": "Bills paid", tabindex: "-1" },
+    h("section", { class: "payday-done payday-screen", "aria-label": "Bills paid", tabindex: "-1", "data-say": paydaySay() },
       h("div", { class: "payday-hero" },
-        h("span", { class: "tick" }, icon("check")),
+        // A pot filling to its goal, then the tick: the month's one celebration.
+        h("span", { class: "tick" }, h("span", { class: "tick-fill", "aria-hidden": "true" }), icon("check")),
         h("h1", null, "Bills paid"),
-        h("p", { class: "payday-amount num positive" }, formatGBP(amount)),
+        h("p", { class: "payday-amount num positive" },
+          h("span", { "aria-hidden": "true" }, countSpan("payday", amount, { from: 0, dur: 1100, delay: 420 })),
+          h("span", { class: "sr-only" }, formatGBP(amount))),
         h("p", null, `into ${pots} pot${pots === 1 ? "" : "s"}. `,
           off.length
             ? `Every pot you selected is at its goal. Not filling: ${off.map((p) => p.name).join(", ")}.`
@@ -583,7 +676,7 @@ function paydayDone() {
   const off = (["personal", "joint"]).flatMap((k) => { const g = S.groups[/** @type {Kind} */ (k)]; return g ? switchedOff(g) : []; });
   const jointOff = S.groups.joint ? switchedOff(S.groups.joint) : [];
   const jointLeft = S.groups.joint?.balance ?? 0;
-  return h("section", { class: "card payday-done", "aria-label": "Bills paid", tabindex: "-1" },
+  return h("section", { class: "card payday-done", "aria-label": "Bills paid", tabindex: "-1", "data-say": paydaySay() },
     h("span", { class: "tick" }, icon("check")),
     h("h2", null, "Bills paid"),
     h("p", null, h("span", { class: "num positive" }, formatGBP(amount)), ` into ${pots} pot${pots === 1 ? "" : "s"}. `,
@@ -597,6 +690,14 @@ function paydayDone() {
       ? h("a", { class: "btn btn-big", href: location.href }, "Start the mock again")
       : h("button", { class: "btn-big", "data-key": "finish", onclick: () => finish() }, "Sign out and finish"),
   );
+}
+
+/** The close in words, for the status region. */
+function paydaySay() {
+  const { amount, pots } = S.filledThisSession;
+  const off = (["personal", "joint"]).flatMap((k) => { const g = S.groups[/** @type {Kind} */ (k)]; return g ? switchedOff(g) : []; });
+  return `Bills paid. ${formatGBP(amount)} into ${pots} pot${pots === 1 ? "" : "s"}.`
+    + (off.length ? ` Not filling: ${off.map((p) => p.name).join(", ")}.` : " Every bill pot is at its goal.");
 }
 
 /** Every selected pot in both accounts is full and something went in this session. */
@@ -614,6 +715,7 @@ async function finish(openMonzo = false) {
   S.filledThisSession = { amount: 0, pots: 0 };
   S.paydayShown = false;
   S.paydayDismissed = false;
+  counters.delete("payday");
   await signOut();
   if (openMonzo) location.href = MONZO_APP_URL;
 }
@@ -704,8 +806,10 @@ function groupView(kind, group, plan) {
   /** @type {any[]} */
   const body = [];
 
+  // Set once, the moment this account's last pot fills: the tick and the way on arrive together.
+  const arrived = changed(`full-${kind}`, total === 0) && total === 0;
   if (total === 0) {
-    body.push(h("div", { class: "all-full" },
+    body.push(h("div", { class: `all-full${arrived ? " arrive" : ""}` },
       h("span", { class: "tick" }, icon("check")),
       h("span", null,
         rows.length === 0 ? `No ${kind} pots have a goal yet.`
@@ -721,9 +825,9 @@ function groupView(kind, group, plan) {
       const toMove = Math.max(0, jointShort - (S.groups.joint?.balance ?? 0));
       const gap = plan ? shortfall(plan).jointGap : 0;
       body.push(h("button", {
-        class: "btn-sm next-step",
+        class: `btn-sm next-step${arrived ? " arrive" : ""}`,
         "data-key": "next-joint",
-        onclick: () => document.getElementById("joint")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        onclick: () => goTo("joint"),
       }, gap > 0
         ? h("span", null, "Next: joint (", money(gap), " short)")
         : toMove > 0
@@ -759,8 +863,10 @@ function groupView(kind, group, plan) {
     const amber = kind === "personal" && (sf?.ownGap ?? 0) > 0;
     // While the transfer card above is the job, joint's own figure steps back a size.
     const waiting = blocked && !S.dryRun;
+    // During a live run the figure drains as each pot's money goes in.
+    const left = Math.max(0, total - (run && !run.dryRun ? run.pending ?? 0 : 0));
     body.push(h("div", null,
-      h("div", { class: `big-number${amber ? " owed" : ""}${waiting ? " waiting" : ""}` }, formatGBP(total)),
+      h("div", { class: `big-number${amber ? " owed" : ""}${waiting ? " waiting" : ""}` }, countSpan(`big-${kind}`, left, { dur: 520 })),
       h("div", { class: "figure-caption" }, `to fill across ${toFill.length} pot${toFill.length === 1 ? "" : "s"}`),
     ));
     if (kind === "personal" && sf && sf.ownGap > 0) body.push(ownShortNote(group.balance, total, sf.ownGap));
@@ -785,6 +891,8 @@ function groupView(kind, group, plan) {
   }
 
   const move = kind === "joint" && plan && total > 0 && !stuck.length ? moveCard(plan, group.balance, total) : null;
+  const ready = kind === "joint" && changed("joint-ready", !blocked) && !blocked && total > 0 && !S.dryRun && !stuck.length;
+  if (ready) jointJustReady = true;
 
   if (kind === "joint" && plan?.jointCovered && total > 0 && !stuck.length) {
     body.push(h("p", { class: "note ok" }, icon("check"), h("span", null, "There's enough in joint for these pots.")));
@@ -795,7 +903,7 @@ function groupView(kind, group, plan) {
     const needsMonzo = stuck.some((r) => r.code && /locked/.test(r.code));
     const quietRetry = stuck.length > 0 && S.stillLocked[kind].length > 0;
     body.push(h("button", {
-      class: quietRetry ? "btn-sm btn-quiet retry-quiet" : stuck.length ? "btn-big" : "btn-primary btn-big",
+      class: (quietRetry ? "btn-sm btn-quiet retry-quiet" : stuck.length ? "btn-big" : "btn-primary btn-big") + (ready ? " ready" : ""),
       "data-key": `fill-${kind}`,
       disabled: busy() || S.refreshing || (blocked && !S.dryRun),
       onclick: () => (stuck.length && needsMonzo ? retryStuck(kind, stuck) : runFill(kind)),
@@ -1104,7 +1212,7 @@ function resultsView(kind, run, failuresShownAbove) {
       }, "Clear"),
     ),
     run.stopped && h("p", { class: "note bad", style: { margin: "4px 0 8px" } }, h("span", null, `Stopped: ${run.stopped}.`, run.dryRun ? "" : " Running it again only fills what's still short.")),
-    rows.length > 0 && h("ul", null, rows.map(resultRow)),
+    rows.length > 0 && h("ul", null, rows.map((r) => resultRow(r, kind))),
     foldable.length > 0 && h("button", {
       class: "btn-link results-toggle",
       "aria-expanded": String(open),
@@ -1118,8 +1226,10 @@ function resultsView(kind, run, failuresShownAbove) {
 /** @type {Record<Result["outcome"], keyof typeof ICONS>} */
 const RESULT_ICON = { filled: "check", would_fill: "arrow", skipped: "dash", failed: "alert", not_attempted: "clock" };
 
-/** @param {Result} r */
-function resultRow(r) {
+/** @param {Result} r @param {Kind} kind */
+function resultRow(r, kind) {
+  // A row that has just settled (Waiting → filled, failed…) gets a small arrival.
+  const settled = changed(`res-${kind}-${r.potId}`, r.outcome) && r.outcome !== "not_attempted";
   const label = {
     filled: "",
     would_fill: r.message,
@@ -1128,7 +1238,7 @@ function resultRow(r) {
     not_attempted: r.message ? "Not tried: stopped after an earlier problem" : "Waiting",
   }[r.outcome];
   const showAmount = r.outcome === "filled" || r.outcome === "would_fill";
-  return h("li", { class: `result ${r.outcome}` },
+  return h("li", { class: `result ${r.outcome}${settled ? " arrive" : ""}` },
     icon(RESULT_ICON[r.outcome]),
     h("span", null, h("span", { class: "name" }, r.name), label && h("span", { class: "msg" }, label)),
     h("span", { class: "amt num" }, showAmount ? formatGBP(r.amount) : ""),

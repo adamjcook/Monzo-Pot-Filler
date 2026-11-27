@@ -50,6 +50,7 @@
   --focus: color-mix(in srgb, var(--brand-fg) 70%, transparent);
 
   --card-shadow: none;
+  --card-shadow-layer: 0 0 transparent; /* the card's shadow as a list layer, for animations */
   --overlay-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
   --radius-lg: 20px;
   --radius: 14px;
@@ -88,6 +89,7 @@
   --debt-ink: #9a4c06; /* amber for small text on an amber tint (chips): 4.8:1 */
   --danger: #d92d20;
   --card-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06);
+  --card-shadow-layer: var(--card-shadow);
   --overlay-shadow: 0 12px 32px rgb(16 24 40 / 0.16);
   --fw-body: 400;
   color-scheme: light;
@@ -696,15 +698,189 @@ button:disabled {
   text-align: center;
 }
 
+/* The close's one authored moment: the circle fills like a pot reaching its goal,
+   the tick draws, a single ring goes out, and the month's total counts up. */
 .payday-screen .tick {
+  position: relative;
   width: 72px;
   height: 72px;
   margin-bottom: 10px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  animation: done-pop 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.payday-screen .tick-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  animation: fill-rise 760ms cubic-bezier(0.33, 1, 0.68, 1) 160ms backwards;
+}
+
+.payday-screen .tick::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  animation: ring-out 900ms cubic-bezier(0.16, 1, 0.3, 1) 820ms;
 }
 
 .payday-screen .tick .icon {
+  position: relative;
   width: 38px;
   height: 38px;
+}
+
+.payday-screen .tick .icon path {
+  stroke-dasharray: 1;
+  animation: draw 340ms cubic-bezier(0.65, 0, 0.35, 1) 560ms backwards;
+}
+
+.payday-screen h1 {
+  animation: rise 480ms cubic-bezier(0.16, 1, 0.3, 1) 300ms backwards;
+}
+
+.payday-screen .payday-amount {
+  animation: rise 480ms cubic-bezier(0.16, 1, 0.3, 1) 400ms backwards;
+}
+
+.payday-hero p:not(.payday-amount) {
+  animation: fade-in 500ms ease-out 1000ms backwards;
+}
+
+.payday-actions {
+  animation: fade-in 400ms ease-out 700ms backwards;
+}
+
+@keyframes fill-rise {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes ring-out {
+  from {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---- between the accounts: what just changed, and where to go next ---------------- */
+
+.all-full.arrive .tick {
+  animation: soft-pop 360ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.all-full.arrive > span:last-child {
+  animation: soft-in 260ms ease-out backwards;
+}
+
+/* arrivals that replace something already on screen never pass through empty */
+@keyframes soft-pop {
+  from {
+    transform: scale(0.85);
+    opacity: 0.4;
+  }
+}
+
+@keyframes soft-in {
+  from {
+    opacity: 0.4;
+  }
+}
+
+.next-step.arrive {
+  animation: nudge-in 420ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards;
+}
+
+.next-step .icon {
+  transition: transform 150ms ease-out;
+}
+
+.next-step.arrive .icon {
+  animation: nudge 700ms cubic-bezier(0.65, 0, 0.35, 1) 700ms;
+}
+
+@keyframes nudge-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+
+@keyframes nudge {
+  40% {
+    transform: translateX(4px);
+  }
+}
+
+/* Landing on an account from "Next": its first card rings once in focus green,
+   holding while the scroll settles, then letting go. Its own shadow stays put. */
+.card.land {
+  animation: land 1500ms ease-out 200ms backwards;
+}
+
+@keyframes land {
+  0%,
+  40% {
+    box-shadow: var(--card-shadow-layer), 0 0 0 2px var(--focus);
+  }
+  100% {
+    box-shadow: var(--card-shadow-layer), 0 0 0 2px transparent;
+  }
+}
+
+/* Joint has just become fillable (back from the Monzo app): its button rings once. */
+.btn-primary.ready {
+  animation: ready 900ms cubic-bezier(0.16, 1, 0.3, 1) 350ms;
+}
+
+@keyframes ready {
+  from {
+    box-shadow: 0 0 0 0 var(--focus);
+  }
+  to {
+    box-shadow: 0 0 0 12px transparent;
+  }
+}
+
+/* A result row that has just settled during a run. */
+.result.arrive .icon {
+  animation: done-pop 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.result.arrive .amt,
+.result.arrive .msg {
+  animation: fade-in 260ms ease-out backwards;
 }
 
 .payday-screen h1 {
@@ -1333,8 +1509,30 @@ dialog[open] {
 
 @media (prefers-reduced-motion: reduce) {
   *,
+  *::before,
   *::after {
     transition: none !important;
     animation: none !important;
+  }
+
+  /* No movement, but the next job is still marked with a ring that only fades. */
+  .card.land {
+    animation: land 1500ms ease-out backwards !important;
+  }
+
+  .btn-primary.ready {
+    animation: ready-still 1200ms ease-out 200ms backwards !important;
+  }
+
+  @keyframes ready-still {
+    from {
+      box-shadow: 0 0 0 3px var(--focus);
+    }
+  }
+
+  /* No movement, but the close still arrives rather than snapping in. */
+  .payday-screen .payday-hero,
+  .payday-screen .payday-actions {
+    animation: fade-in 240ms ease-out backwards !important;
   }
 }
