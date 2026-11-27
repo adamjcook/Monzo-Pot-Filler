@@ -539,9 +539,13 @@ function freshness(at) {
   );
 }
 
-/** Opens the Monzo app from Chrome on Android (falls back to monzo.com if it isn't installed). */
-const MONZO_APP_URL = "intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;"
-  + "package=co.uk.getmondo;S.browser_fallback_url=https%3A%2F%2Fmonzo.com;end";
+/**
+ * Opens the Monzo app from Chrome on Android through its monzo:// scheme (falls back to
+ * monzo.com if the app isn't installed). Chrome only hands a page's links to apps that
+ * accept browser links, so a plain "launch this app" intent can't work: it always fell back.
+ */
+const MONZO_APP_URL = "intent://home#Intent;scheme=monzo;package=co.uk.getmondo;"
+  + "S.browser_fallback_url=https%3A%2F%2Fmonzo.com;end";
 const IS_ANDROID = /Android/i.test(navigator.userAgent);
 
 /** Every selected pot is full: the whole screen becomes the session's close. */
