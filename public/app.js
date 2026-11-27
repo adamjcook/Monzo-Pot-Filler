@@ -646,7 +646,8 @@ function viewPaydayDone() {
   const jointLeft = S.groups.joint?.balance ?? 0;
   const back = () => { S.paydayDismissed = true; render(); window.scrollTo({ top: 0, behavior: "auto" }); };
   return [
-    h("section", { class: "payday-done payday-screen", "aria-label": "Bills paid", tabindex: "-1", "data-say": paydaySay() },
+    // Played once: the 30s refresh and other re-renders show it settled, not again.
+    h("section", { class: `payday-done payday-screen${S.paydayShown ? " played" : ""}`, "aria-label": "Bills paid", tabindex: "-1", "data-say": paydaySay() },
       h("div", { class: "payday-hero" },
         // A pot filling to its goal, then the tick: the month's one celebration.
         h("span", { class: "tick" }, h("span", { class: "tick-fill", "aria-hidden": "true" }), icon("check")),
@@ -676,7 +677,7 @@ function paydayDone() {
   const off = (["personal", "joint"]).flatMap((k) => { const g = S.groups[/** @type {Kind} */ (k)]; return g ? switchedOff(g) : []; });
   const jointOff = S.groups.joint ? switchedOff(S.groups.joint) : [];
   const jointLeft = S.groups.joint?.balance ?? 0;
-  return h("section", { class: "card payday-done", "aria-label": "Bills paid", tabindex: "-1", "data-say": paydaySay() },
+  return h("section", { class: `card payday-done${S.paydayShown ? " played" : ""}`, "aria-label": "Bills paid", tabindex: "-1", "data-say": paydaySay() },
     h("span", { class: "tick" }, icon("check")),
     h("h2", null, "Bills paid"),
     h("p", null, h("span", { class: "num positive" }, formatGBP(amount)), ` into ${pots} pot${pots === 1 ? "" : "s"}. `,

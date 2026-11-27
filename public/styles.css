@@ -755,6 +755,13 @@ button:disabled {
   animation: fade-in 400ms ease-out 700ms backwards;
 }
 
+/* once seen, a rebuilt close shows its settled state */
+.payday-done.played,
+.payday-done.played *,
+.payday-done.played *::after {
+  animation: none !important;
+}
+
 @keyframes fill-rise {
   from {
     clip-path: inset(100% 0 0 0);
