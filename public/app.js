@@ -593,7 +593,9 @@ function paydayDone() {
     jointOff.length > 0 && jointLeft > 0 &&
       h("p", null, h("span", { class: "num" }, formatGBP(jointLeft)), ` is still in joint for ${jointOff.map((p) => p.name).join(", ")}.`),
     S.loadedAt > 0 && freshness(S.loadedAt),
-    !MOCK && h("button", { class: "btn-big", "data-key": "finish", onclick: () => finish() }, "Sign out and finish"),
+    MOCK
+      ? h("a", { class: "btn btn-big", href: location.href }, "Start the mock again")
+      : h("button", { class: "btn-big", "data-key": "finish", onclick: () => finish() }, "Sign out and finish"),
   );
 }
 
@@ -711,8 +713,11 @@ function groupView(kind, group, plan) {
         : justFilled && !paydayActive() ? `All ${kind} pots are full. Nicely done.`
         : `All ${kind} pots are full.`),
     ));
-    const jointShort = kind === "personal" && S.groups.joint ? summarise(S.groups.joint.pots, S.excluded).total : 0;
-    if (jointShort > 0) {
+    const js = kind === "personal" && S.groups.joint ? summarise(S.groups.joint.pots, S.excluded) : null;
+    const jointShort = js?.total ?? 0;
+    // Once joint's own section is showing a stuck pot, don't send the owner there as "next".
+    const jointStuck = js ? stuckPots(S.runs.joint, js.toFill).length > 0 : false;
+    if (jointShort > 0 && !jointStuck) {
       const toMove = Math.max(0, jointShort - (S.groups.joint?.balance ?? 0));
       const gap = plan ? shortfall(plan).jointGap : 0;
       body.push(h("button", {
@@ -752,8 +757,10 @@ function groupView(kind, group, plan) {
     const sf = plan ? shortfall(plan) : null;
     // Joint's own figure stays plain: its shortfall shows on the transfer it can't get.
     const amber = kind === "personal" && (sf?.ownGap ?? 0) > 0;
+    // While the transfer card above is the job, joint's own figure steps back a size.
+    const waiting = blocked && !S.dryRun;
     body.push(h("div", null,
-      h("div", { class: `big-number${amber ? " owed" : ""}` }, formatGBP(total)),
+      h("div", { class: `big-number${amber ? " owed" : ""}${waiting ? " waiting" : ""}` }, formatGBP(total)),
       h("div", { class: "figure-caption" }, `to fill across ${toFill.length} pot${toFill.length === 1 ? "" : "s"}`),
     ));
     if (kind === "personal" && sf && sf.ownGap > 0) body.push(ownShortNote(group.balance, total, sf.ownGap));
@@ -784,7 +791,6 @@ function groupView(kind, group, plan) {
   }
 
   if (total > 0) {
-    const label = S.dryRun ? "Practise filling" : "Fill";
     // A pot that needs changing in Monzo first gets a fresh read before the retry.
     const needsMonzo = stuck.some((r) => r.code && /locked/.test(r.code));
     const quietRetry = stuck.length > 0 && S.stillLocked[kind].length > 0;
@@ -801,14 +807,16 @@ function groupView(kind, group, plan) {
         ? quietRetry
           ? h("span", null, "Refresh and try again")
           : h("span", null, needsMonzo ? "Refresh and try again (" : "Try again (", money(total), ")")
-        : h("span", null, `${label} ${kind} pots (`, money(total), ")")));
+        : S.dryRun
+          ? h("span", null, "Practise filling (", money(total), ")")
+          : h("span", null, `Fill ${kind} pots (`, money(total), ")")));
   }
 
   if (total > 0 && blocked && !S.dryRun && !stuck.length && plan) {
     body.push(h("p", { class: "button-reason" },
       shortfall(plan).jointGap > 0
         ? "Joint can't be filled until it has enough: leave some pots for this month, or move more money in."
-        : ["Move ", money(plan.moveToJoint), " to joint first, then tap Refresh."]));
+        : "Ready once the transfer above reaches joint."));
   }
 
   if (run) body.push(resultsView(kind, run, stuck.length > 0));
@@ -839,16 +847,16 @@ function moveCard(plan, jointBalance, jointTotal) {
     cutSuggestion("joint", sf.jointGap));
 
   if (plan.jointCovered) {
-    const locked = lockedNote(S.groups.joint);
+    const locked = lockedNote(S.groups.joint, true);
     if (!warning && !locked) return null;
     return h("div", { class: "card notice" }, warning, locked);
   }
   return h("div", { class: "card notice" },
-    h("h3", null, "Move ", h("span", { class: sf.jointGap > 0 ? "owed" : "" }, money(plan.moveToJoint)), " to joint first"),
+    h("h3", null, "Move ", h("span", { class: sf.jointGap > 0 ? "owed" : "" }, money(plan.moveToJoint)), " to joint in the Monzo app"),
     h("p", null,
       "Joint has ", h("b", null, money(jointBalance)), " and its pots need ", h("b", null, money(jointTotal)),
-      ". Transfer the difference from your account to joint in the Monzo app, then tap Refresh."),
-    lockedNote(S.groups.joint),
+      ". Pot Filler can't move money between accounts, so make this transfer yourself. Balances refresh when you come back."),
+    lockedNote(S.groups.joint, true),
     warning,
     h("div", { class: "btn-row" },
       h("button", {
@@ -860,6 +868,8 @@ function moveCard(plan, jointBalance, jointTotal) {
             S.copied = true;
             announce("Amount copied");
             render();
+            // The return trip is handled by the visibilitychange reload below.
+            if (IS_ANDROID && !MOCK) location.href = MONZO_APP_URL;
             setTimeout(() => { S.copied = false; render(); }, 1500);
           } catch {
             S.copyFailed = true;
@@ -869,7 +879,7 @@ function moveCard(plan, jointBalance, jointTotal) {
           }
         },
       }, icon(S.copied ? "check" : "copy", "icon icon-sm"),
-      S.copied ? "Copied" : S.copyFailed ? `Couldn't copy: ${plainAmount(plan.moveToJoint)}` : "Copy amount"),
+      S.copied ? "Copied" : S.copyFailed ? `Couldn't copy: ${plainAmount(plan.moveToJoint)}` : IS_ANDROID && !MOCK ? "Copy and open Monzo" : "Copy amount"),
       h("button", { class: "btn-sm", "data-key": "refresh-joint", disabled: S.refreshing || busy(), onclick: load },
         icon("refresh", "icon icon-sm"), S.refreshing ? "Refreshing…" : "Refresh"),
       mock && h("button", {
@@ -888,7 +898,8 @@ function moveCard(plan, jointBalance, jointTotal) {
  */
 function potList(kind, title, rows) {
   if (!rows.length) return null;
-  const open = rows.filter((r) => r.shortfall > 0);
+  // Biggest shortfalls first, so the pots that matter most sit at the top.
+  const open = rows.filter((r) => r.shortfall > 0).sort((a, b) => b.shortfall - a.shortfall);
   const full = rows.filter((r) => r.shortfall === 0);
   const showFull = S.showFull[kind];
   const toggle = full.length > 0 && h("li", { class: "full-toggle" },
@@ -962,14 +973,26 @@ function lockedShort(group) {
   return group ? summarise(group.pots, S.excluded).toFill.filter((r) => r.pot.locked) : [];
 }
 
-/** @param {Group | null} group */
-function lockedNote(group) {
+/**
+ * @param {Group | null} group
+ * @param {boolean} [withAction] offer the one-tap "leave it" right here
+ */
+function lockedNote(group, withAction = false) {
   const locked = lockedShort(group);
   if (!locked.length) return null;
   const sum = locked.reduce((n, r) => n + r.shortfall, 0);
-  return h("p", { class: "note warn" }, icon("lock"),
+  const one = locked.length === 1;
+  const note = h("p", { class: "note warn" }, icon("lock"),
     h("span", null,
-      `Includes ${formatGBP(sum)} for ${locked.map((r) => r.pot.name).join(", ")}, locked in Monzo, which may refuse it. Unlock it first, or switch it off to leave it out.`));
+      `Includes ${formatGBP(sum)} for ${locked.map((r) => r.pot.name).join(", ")}, locked in Monzo, which may refuse ${one ? "it" : "them"}. Unlock ${one ? "it" : "them"} in Monzo first, or leave ${one ? "it" : "them"} out for this month.`));
+  if (!withAction) return note;
+  return [note, h("div", { class: "btn-row" },
+    h("button", {
+      class: "btn-sm",
+      "data-key": "leave-locked",
+      disabled: busy(),
+      onclick: () => { leaveForMonth(locked.map((r) => r.pot.id)); render("fill-joint"); },
+    }, one ? `Leave ${locked[0].pot.name} for this month` : `Leave these ${locked.length} for this month`))];
 }
 
 /** @param {{ pot: Pot, shortfall: number, excluded: boolean }} r */
@@ -980,7 +1003,7 @@ function potRow({ pot, shortfall, excluded }) {
   return h("li", { class: `pot${excluded ? " off" : ""}` },
     h("div", null,
       h("div", { class: "row-title" },
-        h("span", null, pot.name),
+        h("span", { class: "pot-name" }, pot.name),
         pot.locked && h("span", { class: "chip chip-warn" }, icon("lock", "icon"), "Locked"),
       ),
       h("div", { class: "row-sub num" }, `${formatGBP(pot.balance)} of ${formatGBP(goal)}`),
@@ -1024,7 +1047,9 @@ function resultsHeadline(run) {
   const sum = filled.reduce((s, r) => s + r.amount, 0);
   const failed = run.results.filter((r) => r.outcome === "failed" && !S.excluded.has(r.potId)).length;
   const pots = (/** @type {number} */ n) => `${n} pot${n === 1 ? "" : "s"}`;
-  if (run.running) return { text: progressText(run), tone: "" };
+  if (run.running) {
+    return { text: run.dryRun ? `${formatGBP(sum)} would go in so far` : `${formatGBP(sum)} in so far`, tone: "" };
+  }
   if (run.dryRun) {
     const locked = filled.filter((r) => r.code === "locked").length;
     const waiting = filled.filter((r) => r.message && r.code !== "locked").length;
@@ -1060,7 +1085,8 @@ function resultsView(kind, run, failuresShownAbove) {
         .filter((r) => !(failuresShownAbove && r.outcome === "failed"))
         .sort((a, b) => order[a.outcome] - order[b.outcome]);
   // Problems stay open; the routine rows fold behind one line once the run is over.
-  const routine = (/** @type {Result} */ r) => r.outcome === "filled" || r.outcome === "would_fill" || r.outcome === "skipped";
+  // Practice exists to show what each pot would get, so its rows never fold.
+  const routine = (/** @type {Result} */ r) => r.outcome === "filled" || r.outcome === "skipped" || (r.outcome === "would_fill" && !run.dryRun);
   const open = S.showResults[kind];
   const foldable = run.running ? [] : shown.filter(routine);
   const rows = run.running ? shown : shown.filter((r) => !routine(r) || open);
@@ -1077,14 +1103,15 @@ function resultsView(kind, run, failuresShownAbove) {
         onclick: () => { S.runs[kind] = null; render(`fill-${kind}`); },
       }, "Clear"),
     ),
-    run.stopped && h("p", { class: "note bad", style: { margin: "4px 0 8px" } }, h("span", null, `Stopped: ${run.stopped}`)),
+    run.stopped && h("p", { class: "note bad", style: { margin: "4px 0 8px" } }, h("span", null, `Stopped: ${run.stopped}.`, run.dryRun ? "" : " Running it again only fills what's still short.")),
     rows.length > 0 && h("ul", null, rows.map(resultRow)),
     foldable.length > 0 && h("button", {
       class: "btn-link results-toggle",
       "aria-expanded": String(open),
       "data-key": `results-${kind}`,
       onclick: () => { S.showResults[kind] = !open; render(`results-${kind}`); },
-    }, open ? "Hide details" : `Show all ${foldable.length} pot${foldable.length === 1 ? "" : "s"}`),
+    }, h("span", null, open ? "Hide details" : `Show all ${foldable.length} pot${foldable.length === 1 ? "" : "s"}`),
+    h("span", { class: `chevron${open ? " open" : ""}` }, icon("chevron", "icon icon-sm"))),
   );
 }
 
@@ -1125,8 +1152,8 @@ function confirmFill(kind, items, total, off) {
     const dlg = /** @type {HTMLDialogElement} */ (h("dialog", { "aria-labelledby": "sheet-title" },
       h("div", { class: "sheet" },
         h("div", { class: "grabber", "aria-hidden": "true" }),
-        h("h2", { id: "sheet-title" }, `Fill ${items.length} ${kind} pot${items.length === 1 ? "" : "s"}?`),
-        h("p", { class: "lede" }, "This moves ", money(total), ` from ${from}. Each pot is checked again just before its money goes in.`),
+        h("h1", { id: "sheet-title" }, `Fill ${items.length} ${kind} pot${items.length === 1 ? "" : "s"}?`),
+        h("p", { class: "lede" }, "This moves ", money(total), ` of ${MOCK ? "mock" : "real"} money from ${from}. Each pot is checked again just before its money goes in.`),
         h("ul", { class: "sheet-list" },
           items.map((i) => h("li", null, h("span", null, i.name), money(i.amount)))),
         h("div", { class: "sheet-total" }, h("span", null, "Total"), money(total)),
@@ -1143,6 +1170,13 @@ function confirmFill(kind, items, total, off) {
     dlg.addEventListener("click", (e) => { if (e.target === dlg) close(false); });
     document.body.append(dlg);
     dlg.showModal();
+    const list = dlg.querySelector(".sheet-list");
+    if (list && list.scrollHeight > list.clientHeight + 1) {
+      const atEnd = () => list.classList.toggle("at-end", list.scrollTop + list.clientHeight >= list.scrollHeight - 2);
+      list.classList.add("scrolls");
+      list.addEventListener("scroll", atEnd, { passive: true });
+      atEnd();
+    }
   });
 }
 

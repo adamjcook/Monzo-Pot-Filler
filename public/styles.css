@@ -491,6 +491,13 @@ button:disabled {
   font-variant-numeric: tabular-nums;
 }
 
+/* joint's figure while the transfer card above is the job */
+.big-number.waiting {
+  font-size: var(--fs-heading);
+  letter-spacing: -0.012em;
+  color: var(--text-2);
+}
+
 .figure-caption {
   font-size: var(--fs-footnote);
   color: var(--text-2);
@@ -773,16 +780,26 @@ button:disabled {
 
 .row-title {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 2px 6px;
   font-weight: var(--fw-label);
   letter-spacing: -0.006em;
 }
 
-.row-title span {
+/* a name wraps to two lines before it is cut, so a tagged pot stays readable */
+.row-title .pot-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+.row-title .chip {
+  flex: none;
 }
 
 .row-sub {
@@ -860,6 +877,16 @@ button:disabled {
   justify-self: start;
   margin-top: 2px;
   padding: 0;
+  gap: 4px;
+}
+
+.results-toggle .chevron {
+  display: inline-flex;
+  transition: transform 150ms ease-out;
+}
+
+.results-toggle .chevron.open {
+  transform: rotate(90deg);
 }
 
 .payday-done:focus {
@@ -1247,7 +1274,7 @@ dialog[open] {
   margin: 0 auto 4px;
 }
 
-.sheet h2 {
+.sheet h1 {
   font-size: 22px;
   font-weight: var(--fw-bold);
   letter-spacing: -0.02em;
@@ -1264,6 +1291,11 @@ dialog[open] {
   max-height: 38dvh;
   overflow: auto;
   border-top: 1px solid var(--separator);
+}
+
+/* a long list fades at its foot, so it reads as scrollable rather than clipped */
+.sheet-list.scrolls:not(.at-end) {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
 }
 
 .sheet-list li {
