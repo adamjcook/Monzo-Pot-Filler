@@ -52,7 +52,7 @@ npm run check        # typecheck + tests
    - **Confidentiality: not confidential**
 2. Put the client ID in `wrangler.jsonc` → `vars.MONZO_CLIENT_ID`. Optionally set `ALLOWED_USER_ID`.
 3. `npx wrangler secret put MONZO_CLIENT_SECRET`
-4. `npm run deploy`, then open the URL on the phone and choose **Add to Home screen**.
+4. Deploy: Cloudflare Workers Builds is connected to this repo, so every push to `main` deploys (`npm run deploy` does the same by hand). Open the URL on the phone and choose **Add to Home screen**.
 5. The first time, sign in, approve the connection in the Monzo app, tap **Continue**, and check the dry run.
 
 ## Things the Monzo docs don't cover (check on the first live run)
