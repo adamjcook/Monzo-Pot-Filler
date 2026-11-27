@@ -565,8 +565,9 @@ function viewPaydayDone() {
           h("p", null, h("span", { class: "num" }, formatGBP(jointLeft)), ` is still in joint for ${jointOff.map((p) => p.name).join(", ")}.`),
       ),
       h("div", { class: "payday-actions" },
-        h("button", { class: "btn-primary btn-big", "data-key": "finish", onclick: finish }, "Sign out"),
-        IS_ANDROID && h("a", { class: "btn btn-big", href: MONZO_APP_URL }, "Open the Monzo app"),
+        IS_ANDROID
+          ? h("button", { class: "btn-primary btn-big", "data-key": "finish", onclick: () => finish(true) }, "Sign out and open Monzo")
+          : h("button", { class: "btn-primary btn-big", "data-key": "finish", onclick: () => finish() }, "Sign out"),
         h("button", { class: "btn-link", "data-key": "payday-back", onclick: back }, "Go back to my pots"),
       ),
     ),
@@ -588,7 +589,7 @@ function paydayDone() {
     jointOff.length > 0 && jointLeft > 0 &&
       h("p", null, h("span", { class: "num" }, formatGBP(jointLeft)), ` is still in joint for ${jointOff.map((p) => p.name).join(", ")}.`),
     S.loadedAt > 0 && freshness(S.loadedAt),
-    !MOCK && h("button", { class: "btn-big", "data-key": "finish", onclick: finish }, "Sign out and finish"),
+    !MOCK && h("button", { class: "btn-big", "data-key": "finish", onclick: () => finish() }, "Sign out and finish"),
   );
 }
 
@@ -598,13 +599,17 @@ function paydayActive() {
   return S.filledThisSession.pots > 0 && t(S.groups.personal) === 0 && t(S.groups.joint) === 0;
 }
 
-/** Ends payday: revokes this app's Monzo access now and clears this tab's record. */
-async function finish() {
+/**
+ * Ends payday: revokes this app's Monzo access now and clears this tab's record.
+ * @param {boolean} [openMonzo] then hand over to the Monzo app
+ */
+async function finish(openMonzo = false) {
   session.del(RUNS_KEY);
   S.filledThisSession = { amount: 0, pots: 0 };
   S.paydayShown = false;
   S.paydayDismissed = false;
   await signOut();
+  if (openMonzo) location.href = MONZO_APP_URL;
 }
 
 function modeControl() {
