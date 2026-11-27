@@ -7,7 +7,9 @@ import {
   isAuthError,
   jointPlan,
   plainAmount,
+  suggestCut,
   summarise,
+  today,
   visiblePots,
 } from "./logic.js";
 import { liveApi } from "./api.js";
@@ -58,8 +60,35 @@ function loadExcluded() {
   }
 }
 
+const LEFT_KEY = "pf.left.v1";
+const thisMonth = () => today().slice(0, 7);
+
+/** Pots left out for this month only; forgotten when the month changes. @returns {Set<string>} */
+function loadLeft() {
+  try {
+    const v = JSON.parse(local.get(LEFT_KEY) || "null");
+    if (v && v.month === thisMonth() && Array.isArray(v.ids)) return new Set(v.ids.filter((/** @type {unknown} */ x) => typeof x === "string"));
+  } catch { /* fall through */ }
+  return new Set();
+}
+
+/** Saves both kinds and rebuilds the combined set every view reads. */
 function saveExcluded() {
-  local.set(EXCLUDED_KEY, JSON.stringify([...S.excluded]));
+  local.set(EXCLUDED_KEY, JSON.stringify([...S.off]));
+  local.set(LEFT_KEY, JSON.stringify({ month: thisMonth(), ids: [...S.left] }));
+  S.excluded = new Set([...S.off, ...S.left]);
+}
+
+/** @param {Iterable<string>} ids */
+function leaveForMonth(ids) {
+  for (const id of ids) S.left.add(id);
+  saveExcluded();
+}
+
+/** @param {Iterable<string>} ids */
+function turnBackOn(ids) {
+  for (const id of ids) { S.off.delete(id); S.left.delete(id); }
+  saveExcluded();
 }
 
 const RUNS_KEY = "pf.runs.v1";
@@ -113,7 +142,12 @@ const S = {
   checking: false,
   /** Practice (dry run) is on until the first real fill on this phone (live only). */
   dryRun: MOCK ? false : local.get(LIVE_FILL_DONE_KEY) !== "1",
-  excluded: loadExcluded(),
+  /** Switched off until turned back on. */
+  off: loadExcluded(),
+  /** Left out for this month only. */
+  left: loadLeft(),
+  /** Everything not being filled now: off ∪ left (rebuilt by saveExcluded). @type {Set<string>} */
+  excluded: new Set(),
   /** @type {Record<Kind, Group | null>} */
   groups: { personal: null, joint: null },
   /** @type {Record<Kind, Run | null>} */
@@ -138,6 +172,8 @@ const S = {
   /** @type {"dark" | "light" | "system"} */
   theme: themeChoice(),
 };
+
+S.excluded = new Set([...S.off, ...S.left]);
 
 const busy = () => Boolean(S.runs.personal?.running || S.runs.joint?.running);
 
@@ -509,13 +545,19 @@ function paydayDone() {
     h("h2", null, "Payday done"),
     h("p", null, h("span", { class: "num positive" }, formatGBP(amount)), ` into ${pots} pot${pots === 1 ? "" : "s"}. `,
       off.length
-        ? `Every pot you selected is at its goal. Still switched off: ${off.map((p) => p.name).join(", ")}.`
+        ? `Every pot you selected is at its goal. Not filling: ${off.map((p) => p.name).join(", ")}.`
         : "Every bill pot is at its goal, so the bills are covered for the month."),
     jointOff.length > 0 && jointLeft > 0 &&
-      h("p", null, h("span", { class: "num" }, formatGBP(jointLeft)), ` is still in joint, ready for ${jointOff.map((p) => p.name).join(", ")} when you switch it back on.`),
+      h("p", null, h("span", { class: "num" }, formatGBP(jointLeft)), ` is still in joint for ${jointOff.map((p) => p.name).join(", ")}.`),
     S.loadedAt > 0 && freshness(S.loadedAt),
     !MOCK && h("button", { class: "btn-big", "data-key": "finish", onclick: finish }, "Sign out and finish"),
   );
+}
+
+/** Every selected pot in both accounts is full and something went in this session. */
+function paydayActive() {
+  const t = (/** @type {Group | null} */ g) => (g ? summarise(g.pots, S.excluded).total : 0);
+  return S.filledThisSession.pots > 0 && t(S.groups.personal) === 0 && t(S.groups.joint) === 0;
 }
 
 /** Ends payday: revokes this app's Monzo access now and clears this tab's record. */
@@ -590,8 +632,7 @@ async function retryStuck(kind, stuck) {
 
 /** @param {Kind} kind @param {Result[]} stuck */
 function leaveForNow(kind, stuck) {
-  for (const r of stuck) S.excluded.add(r.potId);
-  saveExcluded();
+  leaveForMonth(stuck.map((r) => r.potId));
   S.stillLocked[kind] = [];
   render();
 }
@@ -619,17 +660,20 @@ function groupView(kind, group, plan) {
       h("span", null,
         rows.length === 0 ? `No ${kind} pots have a goal yet.`
         : off.length ? `Every selected ${kind} pot is full.`
-        : justFilled ? `All ${kind} pots are full. Nicely done.`
+        : justFilled && !paydayActive() ? `All ${kind} pots are full. Nicely done.`
         : `All ${kind} pots are full.`),
     ));
     const jointShort = kind === "personal" && S.groups.joint ? summarise(S.groups.joint.pots, S.excluded).total : 0;
     if (jointShort > 0) {
       const toMove = Math.max(0, jointShort - (S.groups.joint?.balance ?? 0));
+      const gap = plan ? shortfall(plan).jointGap : 0;
       body.push(h("button", {
         class: "btn-sm next-step",
         "data-key": "next-joint",
         onclick: () => document.getElementById("joint")?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      }, toMove > 0
+      }, gap > 0
+        ? h("span", null, "Next: joint (", money(gap), " short)")
+        : toMove > 0
         ? h("span", null, "Next: move ", money(toMove), " to joint")
         : h("span", null, "Next: joint pots (", money(jointShort), ")"),
       icon("arrow", "icon icon-sm")));
@@ -648,7 +692,7 @@ function groupView(kind, group, plan) {
             : h("p", null, r.message, ". ", fixFor(r)),
         )),
         h("button", {
-          class: "btn-sm",
+          class: S.stillLocked[kind].length ? "btn-big" : "btn-sm",
           "data-key": `leave-${kind}`,
           disabled: busy(),
           onclick: () => leaveForNow(kind, stuck),
@@ -656,23 +700,31 @@ function groupView(kind, group, plan) {
       ),
     );
   } else {
-    // Amber is for a real shortfall only: this account can't cover what it has to pay for.
-    const shortBy = kind === "personal" && plan ? plan.personalShortBy : 0;
+    // Amber is for a real shortfall only: money this account can't cover.
+    const sf = plan ? shortfall(plan) : null;
+    // Joint's own figure stays plain: its shortfall shows on the transfer it can't get.
+    const amber = kind === "personal" && (sf?.ownGap ?? 0) > 0;
     body.push(h("div", null,
-      h("div", { class: `big-number${shortBy > 0 ? " owed" : ""}` }, formatGBP(total)),
+      h("div", { class: `big-number${amber ? " owed" : ""}` }, formatGBP(total)),
       h("div", { class: "figure-caption" }, `to fill across ${toFill.length} pot${toFill.length === 1 ? "" : "s"}`),
     ));
-    if (shortBy > 0 && plan) body.push(shortNote(group.balance, total, plan));
+    if (kind === "personal" && sf && sf.ownGap > 0) body.push(ownShortNote(group.balance, total, sf.ownGap));
+    else if (kind === "personal" && sf && sf.jointGap > 0) {
+      body.push(h("p", { class: "note warn" }, icon("alert"),
+        h("span", null, "Your pots are covered. Joint will be ", money(sf.jointGap), " short; there's a suggestion under Joint.")));
+    }
   }
 
   if (off.length) {
     body.push(h("p", { class: "switched-off" },
-      h("span", null, `Switched off: ${off.map((p) => `${p.name} (${formatGBP(Math.max(0, (p.goal_amount ?? 0) - p.balance))} short)`).join(", ")}.`),
+      h("span", null, `Not filling: ${off.map((p) => S.left.has(p.id) && !S.off.has(p.id)
+        ? `${p.name} (this month only)`
+        : `${p.name} (${formatGBP(Math.max(0, (p.goal_amount ?? 0) - p.balance))} to go)`).join(", ")}.`),
       h("button", {
         class: "btn-link",
         "data-key": `on-${kind}`,
         disabled: busy(),
-        onclick: () => { for (const p of off) S.excluded.delete(p.id); saveExcluded(); render(`fill-${kind}`); },
+        onclick: () => { turnBackOn(off.map((p) => p.id)); render(`fill-${kind}`); },
       }, off.length === 1 ? "Turn it back on" : "Turn them back on"),
     ));
   }
@@ -687,8 +739,9 @@ function groupView(kind, group, plan) {
     const label = S.dryRun ? "Practise filling" : "Fill";
     // A pot that needs changing in Monzo first gets a fresh read before the retry.
     const needsMonzo = stuck.some((r) => r.code && /locked/.test(r.code));
+    const quietRetry = stuck.length > 0 && S.stillLocked[kind].length > 0;
     body.push(h("button", {
-      class: stuck.length ? "btn-big" : "btn-primary btn-big",
+      class: quietRetry ? "btn-sm btn-quiet retry-quiet" : stuck.length ? "btn-big" : "btn-primary btn-big",
       "data-key": `fill-${kind}`,
       disabled: busy() || S.refreshing || (blocked && !S.dryRun),
       onclick: () => (stuck.length && needsMonzo ? retryStuck(kind, stuck) : runFill(kind)),
@@ -697,8 +750,17 @@ function groupView(kind, group, plan) {
       : S.retrying[kind]
         ? h("span", null, "Refreshing…")
       : stuck.length
-        ? h("span", null, needsMonzo ? "Refresh and try again (" : "Try again (", money(total), ")")
+        ? quietRetry
+          ? h("span", null, "Refresh and try again")
+          : h("span", null, needsMonzo ? "Refresh and try again (" : "Try again (", money(total), ")")
         : h("span", null, `${label} ${kind} pots (`, money(total), ")")));
+  }
+
+  if (total > 0 && blocked && !S.dryRun && !stuck.length && plan) {
+    body.push(h("p", { class: "button-reason" },
+      shortfall(plan).jointGap > 0
+        ? "Joint can't be filled until it has enough: leave some pots for this month, or move more money in."
+        : ["Move ", money(plan.moveToJoint), " to joint first, then tap Refresh."]));
   }
 
   if (run) body.push(resultsView(kind, run, stuck.length > 0));
@@ -720,9 +782,13 @@ function groupView(kind, group, plan) {
  * @param {number} jointTotal
  */
 function moveCard(plan, jointBalance, jointTotal) {
-  const warning = plan.personalShortBy > 0 &&
+  const sf = shortfall(plan);
+  const warning = sf.jointGap > 0 && h("div", { class: "short" },
     h("p", { class: "note warn" }, icon("alert"),
-      h("span", null, "Your account can't cover this transfer as well as your own pots: it's ", money(plan.personalShortBy), " short."));
+      h("span", null,
+        sf.pTot > 0 ? ["After your own pots you'll have ", money(sf.spare)] : ["You have ", money(sf.pBal)],
+        ", ", money(sf.jointGap), " short of this transfer.")),
+    cutSuggestion("joint", sf.jointGap));
 
   if (plan.jointCovered) {
     const locked = lockedNote(S.groups.joint);
@@ -730,12 +796,12 @@ function moveCard(plan, jointBalance, jointTotal) {
     return h("div", { class: "card notice" }, warning, locked);
   }
   return h("div", { class: "card notice" },
-    h("h3", null, "Move ", h("span", { class: plan.personalShortBy > 0 ? "owed" : "" }, money(plan.moveToJoint)), " to joint first"),
+    h("h3", null, "Move ", h("span", { class: sf.jointGap > 0 ? "owed" : "" }, money(plan.moveToJoint)), " to joint first"),
     h("p", null,
       "Joint has ", h("b", null, money(jointBalance)), " and its pots need ", h("b", null, money(jointTotal)),
       ". Transfer the difference from your account to joint in the Monzo app, then tap Refresh."),
     lockedNote(S.groups.joint),
-    warning && h("div", { style: { marginTop: "10px" } }, warning),
+    warning,
     h("div", { class: "btn-row" },
       h("button", {
         class: "btn-sm",
@@ -762,7 +828,7 @@ function moveCard(plan, jointBalance, jointTotal) {
         class: "btn-sm",
         "data-key": "simulate",
         disabled: S.refreshing || busy(),
-        onclick: () => { mock.simulateTransferToJoint(plan.moveToJoint); load(); },
+        onclick: () => { mock.simulateTransferToJoint(Math.min(plan.moveToJoint, S.groups.personal?.balance ?? 0)); load(); },
       }, icon("transfer", "icon icon-sm"), "Mock: make transfer"),
     ),
   );
@@ -796,18 +862,51 @@ function potList(kind, title, rows) {
 }
 
 /**
- * The one truly negative state: the personal account can't cover its own pots
- * plus the money joint needs.
- * @param {number} balance @param {number} total @param {ReturnType<typeof jointPlan>} plan
+ * Where money is genuinely short, and by how much. Personal pots are paid first;
+ * joint gets what is left of the personal balance plus what joint already has.
+ * @param {ReturnType<typeof jointPlan>} plan
  */
-function shortNote(balance, total, plan) {
-  return h("p", { class: "note warn" }, icon("alert"),
-    h("span", null,
-      "Not enough to fill everything: you're ", money(plan.personalShortBy), " short. ",
-      "Your account has ", money(balance), plan.moveToJoint > 0
-        ? [", and needs ", money(total), " for these pots plus ", money(plan.moveToJoint), " for joint."]
-        : [" and these pots need ", money(total), "."],
-      " Switch some pots off, or fill what you can now."));
+function shortfall(plan) {
+  const pBal = S.groups.personal?.balance ?? 0;
+  const pTot = S.groups.personal ? summarise(S.groups.personal.pots, S.excluded).total : 0;
+  const ownGap = Math.max(0, pTot - pBal);
+  const spare = Math.max(0, pBal - pTot);
+  const jointGap = Math.max(0, plan.moveToJoint - spare);
+  return { pBal, pTot, ownGap, spare, jointGap };
+}
+
+/**
+ * A suggested cut with a one-tap way to apply it, for this month only.
+ * @param {Kind} kind @param {number} gap
+ */
+function cutSuggestion(kind, gap) {
+  const group = S.groups[kind];
+  if (!group || gap <= 0) return null;
+  const cut = suggestCut(summarise(group.pots, S.excluded).toFill, gap);
+  if (!cut.pots.length) return null;
+  const names = cut.pots.map((p) => p.name).join(" and ");
+  return [
+    h("p", null, "To make it fit, leave ", h("b", null, names), " (", money(cut.total), ") for this month. You can pick different pots with the switches below."),
+    h("div", { class: "btn-row" },
+      h("button", {
+        class: "btn-sm",
+        "data-key": `cut-${kind}`,
+        disabled: busy(),
+        onclick: () => { leaveForMonth(cut.pots.map((p) => p.id)); render(`fill-${kind}`); },
+      }, `Leave ${cut.pots.length === 1 ? cut.pots[0].name : `these ${cut.pots.length}`} for this month`),
+    ),
+  ];
+}
+
+/**
+ * Personal can't cover even its own pots.
+ * @param {number} balance @param {number} total @param {number} gap
+ */
+function ownShortNote(balance, total, gap) {
+  return h("div", { class: "short" },
+    h("p", { class: "note warn" }, icon("alert"),
+      h("span", null, "Not enough for all your pots: ", money(gap), " short. You have ", money(balance), " and they need ", money(total), ".")),
+    cutSuggestion("personal", gap));
 }
 
 /** Selected, short pots that Monzo shows as locked. @param {Group | null} group */
@@ -856,8 +955,8 @@ function potRow({ pot, shortfall, excluded }) {
         btn.dataset.pending = "1";
         // Let the knob slide on the element the user touched, then rebuild around it.
         btn.setAttribute("aria-checked", String(excluded));
-        if (excluded) S.excluded.delete(pot.id); else S.excluded.add(pot.id);
-        saveExcluded();
+        if (excluded) turnBackOn([pot.id]);
+        else { S.off.add(pot.id); saveExcluded(); }
         const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
         setTimeout(() => render(`pot-${pot.id}`), reduce ? 0 : 170);
       },
@@ -922,7 +1021,7 @@ function resultsView(kind, run, failuresShownAbove) {
       h("h3", null,
         head.tone === "ok" && icon("check", "icon icon-sm"),
         head.tone === "bad" && icon("alert", "icon icon-sm"),
-        h("span", null, head.text, head.problem && [" ", h("span", { class: "head-problem" }, head.problem)]),
+        h("span", null, head.text, head.problem && [" ", h("span", { class: `head-problem${run.dryRun ? " warn" : ""}` }, head.problem)]),
       ),
       !run.running && run.dryRun && h("button", {
         class: "btn-sm btn-quiet",

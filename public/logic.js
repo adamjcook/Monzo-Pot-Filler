@@ -226,3 +226,35 @@ export async function fillPots({ api, accountId, pots, dryRun, day = today(), on
   }
   return { results, stoppedBy };
 }
+
+/**
+ * Which pots to leave out so the rest fit the money there is.
+ * Prefers pots Monzo shows as locked (they may be refused anyway), then the
+ * single pot that closes the gap with least to spare, then the largest pots
+ * until the gap is closed.
+ * @param {{ pot: Pot, shortfall: number }[]} candidates selected pots that still need money
+ * @param {number} gap pence that can't be covered
+ * @returns {{ pots: Pot[], total: number }}
+ */
+export function suggestCut(candidates, gap) {
+  if (gap <= 0) return { pots: [], total: 0 };
+  /** @type {Pot[]} */
+  const chosen = [];
+  let total = 0;
+  let pool = candidates.filter((c) => c.shortfall > 0);
+  for (const c of pool.filter((c) => c.pot.locked)) {
+    if (total >= gap) break;
+    chosen.push(c.pot);
+    total += c.shortfall;
+  }
+  pool = pool.filter((c) => !chosen.includes(c.pot));
+  while (total < gap && pool.length) {
+    const need = gap - total;
+    const enough = pool.filter((c) => c.shortfall >= need).sort((a, b) => a.shortfall - b.shortfall)[0];
+    const pick = enough ?? [...pool].sort((a, b) => b.shortfall - a.shortfall)[0];
+    chosen.push(pick.pot);
+    total += pick.shortfall;
+    pool = pool.filter((c) => c !== pick);
+  }
+  return { pots: chosen, total };
+}

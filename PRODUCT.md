@@ -36,7 +36,7 @@ It reads each pot's goal live from Monzo, so it never drifts from bill prices th
 - Shows pots with a goal, grouped into **Personal** and **Joint**. For each pot it shows the balance, the goal and the shortfall (goal − balance, never below 0). Each group shows its total shortfall and the account's available balance.
 - Pots without a goal, and deleted pots, are left out.
 - Full pots are never touched. **The app never withdraws money.**
-- A switch on each pot excludes it. The choice is remembered on the device (localStorage).
+- A switch on each pot excludes it. The choice is remembered on the device (localStorage). A pot can also be left out for this month only (e.g. a locked pot, or the pots the app suggests leaving when there isn't enough money); those come back on by themselves next month.
 - Every fill is confirmed first, showing the total and each pot's amount.
 - Deposits run one at a time:
   - Each pot is re-read just before its deposit, and the deposit is exactly the fresh shortfall.

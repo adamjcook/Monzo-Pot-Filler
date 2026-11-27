@@ -236,3 +236,23 @@ test("practice flags pots Monzo shows as locked", async () => {
   assert.match(cleaner.message, /Locked in Monzo/);
   assert.ok(results.filter((r) => r.name !== "Cleaner").every((r) => r.message === ""));
 });
+
+test("suggestCut leaves out the fewest pots that close the gap, locked first", async () => {
+  const { suggestCut } = await import("../public/logic.js");
+  const p = (id, shortfall, locked = false) => ({ pot: { id, name: id, balance: 0, goal_amount: shortfall, locked }, shortfall });
+  const pots = [p("a", 2900), p("b", 98765), p("c", 15900), p("d", 6000, true), p("e", 475)];
+  // locked pot first, then the smallest single pot that covers what's left
+  let cut = suggestCut(pots, 41169);
+  assert.deepEqual(cut.pots.map((x) => x.id), ["d", "b"]);
+  assert.ok(cut.total >= 41169);
+  // the locked pot alone is enough
+  cut = suggestCut(pots, 5000);
+  assert.deepEqual(cut.pots.map((x) => x.id), ["d"]);
+  // no locked pots: one pot that just covers it
+  cut = suggestCut(pots.filter((x) => !x.pot.locked), 3000);
+  assert.deepEqual(cut.pots.map((x) => x.id), ["c"]);
+  // nothing single covers it: largest first until covered
+  cut = suggestCut([p("x", 1000), p("y", 900), p("z", 500)], 1800);
+  assert.deepEqual(cut.pots.map((x) => x.id), ["x", "y"]);
+  assert.deepEqual(suggestCut(pots, 0).pots, []);
+});

@@ -2,9 +2,10 @@
    Pot Filler: a sibling of MC Bank, in MC Bank's design language.
    Graphite surfaces with the faintest lean towards the icon's green; the
    icon's deep green owns actions and "where you are" (main buttons, the
-   selected mode, switches, focus, selection). Amber is what pots are still
-   owed; teal is money in, progress and "full". Dark by default; light is
-   opt-in per phone (data-theme="light" on <html>, set by theme.js).
+   selected mode, switches, focus, selection). Amber is only for a real
+   problem (not enough money, locked, stale); ordinary amounts are plain
+   text; teal is money in, progress and "full". Dark by default, with Light
+   or System as per-phone choices (data-theme="light" on <html>, by theme.js).
    ========================================================================== */
 
 @font-face {
@@ -324,6 +325,7 @@ button:disabled {
 }
 
 .btn-sm {
+  position: relative;
   min-height: 36px;
   padding: 0 14px;
   font-size: var(--fs-subhead);
@@ -367,7 +369,7 @@ button:disabled {
 
 .segmented button {
   flex: 1;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 10px;
   border-radius: 9px;
   background: transparent;
@@ -876,6 +878,14 @@ button:disabled {
 }
 
 /* on/off switch (button role="switch") */
+/* the touch target reaches 44px tall without changing the drawn size */
+.switch::before,
+.btn-sm::before {
+  content: '';
+  position: absolute;
+  inset: -6px -4px;
+}
+
 .switch {
   position: relative;
   flex: none;
@@ -953,6 +963,37 @@ button:disabled {
 .results-head.bad h3,
 .results-head .head-problem {
   color: var(--danger);
+}
+
+/* a Practice prediction is a warning, not a failure */
+.results-head .head-problem.warn {
+  color: var(--debt);
+}
+
+.button-reason {
+  margin-top: -6px;
+  font-size: var(--fs-footnote);
+  color: var(--text-2);
+  text-align: center;
+}
+
+.short {
+  display: grid;
+  gap: 8px;
+}
+
+.short > p:not(.note) {
+  font-size: var(--fs-subhead);
+  color: var(--text-2);
+}
+
+.short b {
+  color: var(--text);
+  font-weight: var(--fw-strong);
+}
+
+.retry-quiet {
+  justify-self: center;
 }
 
 .results ul {
